@@ -16,7 +16,7 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
 <div class="page-manual animate-rise">
   <header class="manual-hero panel">
     <div>
-      <div class="manual-kicker">Guia rápido · POLLICONTAS</div>
+      <div class="manual-kicker">Guia rápido · CONTAS</div>
       <h2 class="display" style="margin:.2rem 0 .45rem">Manual de configurações iniciais</h2>
       <p class="muted" style="margin:0;max-width:48rem;line-height:1.5">
         Siga estes passos na ordem para o sistema funcionar do zero. Em cada etapa: <strong>onde clicar</strong>,
@@ -57,7 +57,7 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
       </div>
     </div>
     <figure class="manual-shot">
-      <img src="<?= e($img('01-login.jpg')) ?>" alt="Tela de login do POLLICONTAS" width="1360" height="860" loading="lazy">
+      <img src="<?= e($img('01-login.jpg')) ?>" alt="Tela de login do CONTAS" width="1360" height="860" loading="lazy">
       <figcaption>Tela de login</figcaption>
     </figure>
     <div class="manual-actions">
@@ -430,7 +430,7 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
   <section class="panel" id="instalar-app">
     <h3 class="display" style="margin-top:0">Instalar como aplicativo (PWA)</h3>
     <p class="muted" style="line-height:1.45">
-      O POLLICONTAS pode ser instalado na tela inicial do celular ou como app no computador.
+      O CONTAS pode ser instalado na tela inicial do celular ou como app no computador.
       Funciona em tela cheia (sem barra do navegador) e abre mais rápido.
     </p>
     <div class="manual-actions">
@@ -467,5 +467,15 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
       <a class="btn btn-secondary" href="<?= e(url_path('admin/index.php')) ?>">Abrir Dashboard</a>
     </div>
   </section>
+
+  <footer class="panel" style="text-align:center">
+    <p class="muted" style="margin:0 0 .65rem;font-size:.85rem">
+      <?= e(APP_NAME) ?> — <?= e(APP_TAGLINE) ?>. Sistema independente desenvolvido por
+      <a href="<?= e(APP_VENDOR_URL) ?>" target="_blank" rel="noopener noreferrer"><strong><?= e(APP_VENDOR) ?></strong></a>.
+    </p>
+    <a href="<?= e(APP_VENDOR_URL) ?>" target="_blank" rel="noopener noreferrer" title="<?= e(APP_VENDOR . ' — ' . APP_VENDOR_TAGLINE) ?>">
+      <img src="<?= e(asset('assets/img/synetiq-wordmark-sm.png')) ?>" alt="<?= e(APP_VENDOR) ?>" width="160" height="52" loading="lazy">
+    </a>
+  </footer>
 </div>
 <?php require dirname(__DIR__) . '/templates/admin_layout_end.php'; ?>

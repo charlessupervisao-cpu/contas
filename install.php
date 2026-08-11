@@ -39,7 +39,7 @@ if (request_method() === 'POST') {
     $user = trim((string) post('db_user', ''));
     $pass = (string) post('db_pass', '');
     $authSecret = trim((string) post('auth_secret', bin2hex(random_bytes(16))));
-    $appUrl = trim((string) post('app_url', 'https://pollicontas.synetiq.com.br'));
+    $appUrl = trim((string) post('app_url', 'https://contas.synetiq.com.br'));
     $loadDemo = (bool) post('load_demo', '1');
 
     if ($name === '' || $user === '') {
@@ -111,7 +111,11 @@ $db = db_config();
 <body class="login-shell">
   <div class="login-card animate-rise" style="width:min(100%,560px)">
     <div class="display" style="font-size:1.6rem;font-weight:800;margin-bottom:.25rem"><?= e(APP_NAME) ?></div>
-    <p class="muted">Instalação PHP + MySQL (cPanel) · <?= e(APP_DOMAIN) ?></p>
+    <p class="muted"><?= e(APP_TAGLINE) ?> · Instalação PHP + MySQL (cPanel)</p>
+    <p class="muted" style="font-size:.82rem;margin-top:-.35rem">
+      Domínio <?= e(APP_DOMAIN) ?> · banco <code>synetiqcombr_contas</code> ·
+      desenvolvido por <a href="<?= e(APP_VENDOR_URL) ?>" target="_blank" rel="noopener noreferrer"><?= e(APP_VENDOR) ?></a>
+    </p>
 
     <?php foreach ($errors as $err): ?>
       <div class="alert alert-danger"><?= e($err) ?></div>
@@ -131,11 +135,11 @@ $db = db_config();
         <div class="field"><label class="label">Host MySQL</label><input class="input" name="db_host" value="<?= e($db['host'] ?: 'localhost') ?>" required></div>
         <div class="grid grid-2">
           <div class="field"><label class="label">Porta</label><input class="input" name="db_port" value="<?= e($db['port'] ?: '3306') ?>"></div>
-          <div class="field"><label class="label">Banco</label><input class="input" name="db_name" value="<?= e($db['name'] ?: '') ?>" required placeholder="usuario_pollicontas"></div>
+          <div class="field"><label class="label">Banco</label><input class="input" name="db_name" value="<?= e($db['name'] ?: 'synetiqcombr_contas') ?>" required placeholder="synetiqcombr_contas"></div>
         </div>
         <div class="field"><label class="label">Usuário MySQL</label><input class="input" name="db_user" value="<?= e($db['user'] ?: '') ?>" required></div>
         <div class="field"><label class="label">Senha MySQL</label><input class="input" type="password" name="db_pass" value="" required></div>
-        <div class="field"><label class="label">URL do site</label><input class="input" name="app_url" value="https://pollicontas.synetiq.com.br"></div>
+        <div class="field"><label class="label">URL do site</label><input class="input" name="app_url" value="https://contas.synetiq.com.br"></div>
         <div class="field"><label class="label">AUTH_SECRET</label><input class="input" name="auth_secret" value="<?= e(bin2hex(random_bytes(16))) ?>"></div>
         <label class="row-actions"><input type="checkbox" name="load_demo" value="1" checked> Carregar dados demonstrativos</label>
         <button class="btn btn-primary" type="submit">Instalar schema + seed</button>

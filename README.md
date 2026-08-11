@@ -1,7 +1,8 @@
-# POLLICONTAS
+# CONTAS
 
-Prestação de contas eleitorais — **PHP 8.1+ · MySQL · cPanel**  
-Host: [pollicontas.synetiq.com.br](https://pollicontas.synetiq.com.br)
+Sistema independente de **prestação de contas para políticos** — PHP 8.1+ · MySQL · cPanel  
+Host: [contas.synetiq.com.br](https://contas.synetiq.com.br)  
+Desenvolvido por [Synetiq](https://synetiq.com.br) — Soluções Digitais Inteligentes
 
 Sistema **interno** (sem portal público). Quem não é Master entra só para **consultar**, sem alterar dados.
 
@@ -11,21 +12,19 @@ Sistema **interno** (sem portal público). Quem não é Master entra só para **
 
 Pacote pronto para cPanel (branch desta PR):
 
-- [`releases/pollicontas-cpanel-deploy.zip`](releases/pollicontas-cpanel-deploy.zip)
+- [`releases/contas-cpanel-deploy.zip`](releases/contas-cpanel-deploy.zip)
 
 Ou gere localmente:
 
 ```bash
 bash bin/pack-deploy.sh
-# → dist/pollicontas-deploy-YYYYMMDD.zip
+# → dist/contas-deploy-YYYYMMDD.zip
 ```
-
-
 
 ### O que sobe no servidor
 
 ```
-pollicontas/
+contas/
 ├── .htaccess
 ├── .env.example
 ├── bootstrap.php
@@ -38,16 +37,16 @@ pollicontas/
 └── uploads/candidates/  ← foto do deputado (gravável)
 ```
 
-```bash
-bash bin/pack-deploy.sh
-# → dist/pollicontas-deploy-YYYYMMDD.zip
-```
+### Banco de dados (cPanel)
+
+- Banco: `synetiqcombr_contas`
+- Domínio: `contas.synetiq.com.br`
 
 ### Passos no cPanel
 
-1. Crie banco MySQL + usuário (ALL PRIVILEGES).
-2. Upload do ZIP no document root do subdomínio.
-3. Acesse `/install.php` e configure o MySQL.
+1. Confirme o banco MySQL `synetiqcombr_contas` + usuário (ALL PRIVILEGES).
+2. Upload do ZIP no document root do subdomínio `contas.synetiq.com.br`.
+3. Acesse `/install.php` e configure o MySQL (use o banco `synetiqcombr_contas`).
 4. Apague `install.php`.
 5. Garanta permissão de escrita em `uploads/candidates/` (755 ou 775).
 6. Confirme `/api/health.php`.
@@ -58,10 +57,10 @@ Senha: `admin123`
 
 | E-mail | Perfil |
 |---|---|
-| master@pollicontas.synetiq.com.br | Master (altera / lança) |
-| financeiro@pollicontas.synetiq.com.br | Financeiro (só leitura) |
-| rh@pollicontas.synetiq.com.br | RH (só leitura) |
-| consulta@pollicontas.synetiq.com.br | Consulta (só leitura) |
+| master@contas.synetiq.com.br | Master (altera / lança) |
+| financeiro@contas.synetiq.com.br | Financeiro (só leitura) |
+| rh@contas.synetiq.com.br | RH (só leitura) |
+| consulta@contas.synetiq.com.br | Consulta (só leitura) |
 
 ### Foto do deputado
 
@@ -70,7 +69,7 @@ Ela aparece na **página inicial** (dashboard) ao lado do nome.
 
 ### Fontes
 
-Source Serif 4 (títulos) + Source Sans 3 (texto) — tipografia séria e legível.
+Sora (títulos) + Manrope (texto) — tipografia séria e legível.
 
 ### Dashboard e menu
 
@@ -92,3 +91,7 @@ Arquivos: `manifest.php`, `sw.js`, `assets/img/icons/*`.
 ## Requisitos
 
 PHP 8.1+ (`pdo_mysql`, `mbstring`, `gd` recomendado para redimensionar foto, `fileinfo`) · MySQL 5.7+ / MariaDB 10.3+
+
+---
+
+© Synetiq — [synetiq.com.br](https://synetiq.com.br)

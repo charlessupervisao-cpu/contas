@@ -1,0 +1,10 @@
+.env
+.env.local
+dist/
+*.log
+*.tmp
+.DS_Store
+uploads/candidates/*
+!uploads/candidates/.gitkeep
+uploads/contracts/*
+!uploads/contracts/.gitkeep

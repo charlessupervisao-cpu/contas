@@ -12,6 +12,7 @@ try {
         'runtime' => 'php',
         'brand' => APP_NAME,
         'domain' => APP_DOMAIN,
+        'vendor' => APP_VENDOR,
         'counts' => ['users' => $users, 'campaigns' => $campaigns],
         'timestamp' => date('c'),
     ]);
@@ -23,6 +24,7 @@ try {
         'runtime' => 'php',
         'brand' => APP_NAME,
         'domain' => APP_DOMAIN,
+        'vendor' => APP_VENDOR,
         'error' => $e->getMessage(),
     ], 503);
 }

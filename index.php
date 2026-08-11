@@ -24,9 +24,9 @@ $target = url_path('login.php');
 </head>
 <body class="login-shell" data-base="<?= e(rtrim(env('APP_BASE', '') ?: '', '/')) ?>">
   <div class="login-card animate-rise" style="text-align:center">
-    <img src="<?= e(asset('assets/img/pollicontas-logo.png')) ?>" alt="<?= e(APP_NAME) ?>" width="72" height="72" style="margin:0 auto 1rem;border-radius:18px;box-shadow:var(--shadow);display:block">
+    <img src="<?= e(asset('assets/img/contas-logo.png')) ?>" alt="<?= e(APP_NAME) ?>" width="72" height="72" style="margin:0 auto 1rem;border-radius:18px;box-shadow:var(--shadow);display:block">
     <div class="display" style="font-size:2rem;font-weight:800;color:var(--navy)"><?= e(APP_NAME) ?></div>
-    <p class="muted">Dashboard financeiro · Prestação de Contas · Goiás 2026</p>
+    <p class="muted"><?= e(APP_TAGLINE) ?> · Goiás <?= e((string) ELECTION_YEAR) ?></p>
     <div class="splash-bar" style="margin-top:1.5rem"></div>
   </div>
   <script>setTimeout(function(){ location.href = <?= json_encode($target) ?>; }, 1600);</script>

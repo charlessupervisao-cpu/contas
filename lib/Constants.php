@@ -1,11 +1,15 @@
 <?php
 declare(strict_types=1);
 
-const APP_NAME = 'POLLICONTAS';
+const APP_NAME = 'CONTAS';
+const APP_TAGLINE = 'Prestação de contas para políticos';
 const ELECTION_YEAR = 2026;
 /** Fim da janela do demonstrativo / 1º turno (GO 2026) */
 const CAMPAIGN_END_DATE = '2026-10-04';
-const APP_DOMAIN = 'pollicontas.synetiq.com.br';
+const APP_DOMAIN = 'contas.synetiq.com.br';
+const APP_VENDOR = 'Synetiq';
+const APP_VENDOR_URL = 'https://synetiq.com.br';
+const APP_VENDOR_TAGLINE = 'Soluções Digitais Inteligentes';
 const VEHICLE_FUEL_LIMIT_RATIO = 0.2;
 const MAX_BANK_ACCOUNTS = 4;
 

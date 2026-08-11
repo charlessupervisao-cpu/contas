@@ -34,10 +34,10 @@ foreach ($configMods as $cm) {
   <aside class="sidebar">
     <div class="sidebar-top">
       <div class="sidebar-brand-block">
-        <img src="<?= e(asset('assets/img/pollicontas-logo.png')) ?>" alt="<?= e(APP_NAME) ?>" width="46" height="46">
+        <img src="<?= e(asset('assets/img/contas-logo.png')) ?>" alt="<?= e(APP_NAME) ?>" width="46" height="46">
         <div>
           <div class="display"><?= e(APP_NAME) ?></div>
-          <div class="muted">Prestação de contas · <?= e((string) ELECTION_YEAR) ?></div>
+          <div class="muted"><?= e(APP_TAGLINE) ?></div>
         </div>
       </div>
       <nav aria-label="Menu principal">
@@ -86,9 +86,10 @@ foreach ($configMods as $cm) {
         </details>
       <?php endif; ?>
 
-      <a class="sidebar-brand" href="https://www.synetiq.com.br" target="_blank" rel="noopener noreferrer" title="SynetIQ — Soluções Digitais Inteligentes">
-        <img src="<?= e(asset('assets/img/synetiq-wordmark-sm.png')) ?>" alt="SynetIQ — Soluções Digitais Inteligentes" width="200" height="65" loading="lazy">
+      <a class="sidebar-brand" href="<?= e(APP_VENDOR_URL) ?>" target="_blank" rel="noopener noreferrer" title="<?= e(APP_VENDOR . ' — ' . APP_VENDOR_TAGLINE) ?>">
+        <img src="<?= e(asset('assets/img/synetiq-wordmark-sm.png')) ?>" alt="<?= e(APP_VENDOR . ' — ' . APP_VENDOR_TAGLINE) ?>" width="200" height="65" loading="lazy">
       </a>
+      <div class="sidebar-vendor-note muted">Desenvolvido por <?= e(APP_VENDOR) ?></div>
     </div>
   </aside>
   <div>

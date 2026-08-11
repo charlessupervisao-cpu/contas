@@ -1,0 +1,31 @@
+Options -Indexes
+DirectoryIndex index.php index.html
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # /admin/ → /admin/index.php (evita 403 com Options -Indexes)
+  RewriteRule ^admin/?$ admin/index.php [L,QSA]
+
+  # Sem área pública — atalho antigo vai ao login
+  RewriteRule ^publico\.php$ login.php [R=302,L]
+
+  # Bloqueia acesso direto a pastas sensíveis / tooling
+  RewriteRule ^(config|lib|templates|sql|bin|dist)/ - [F,L]
+
+  # Bloqueia .env e arquivos de empacotamento
+  RewriteRule (^|/)\.env - [F,L]
+  RewriteRule \.(md|sh)$ - [F,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# PHP settings úteis em cPanel (quando permitido)
+<IfModule mod_php.c>
+  php_value upload_max_filesize 16M
+  php_value post_max_size 16M
+</IfModule>

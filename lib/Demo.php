@@ -8,10 +8,10 @@ final class Demo
         $pdo = Database::pdo();
         $hash = password_hash('admin123', PASSWORD_BCRYPT, ['cost' => 10]);
         $defs = [
-            ['Master Campanha', 'master@pollicontas.synetiq.com.br', 'MASTER'],
-            ['Tesoureiro', 'financeiro@pollicontas.synetiq.com.br', 'FINANCEIRO'],
-            ['Coord. RH', 'rh@pollicontas.synetiq.com.br', 'RH'],
-            ['Consulta (somente leitura)', 'consulta@pollicontas.synetiq.com.br', 'CONSULTA'],
+            ['Master Campanha', 'master@contas.synetiq.com.br', 'MASTER'],
+            ['Tesoureiro', 'financeiro@contas.synetiq.com.br', 'FINANCEIRO'],
+            ['Coord. RH', 'rh@contas.synetiq.com.br', 'RH'],
+            ['Consulta (somente leitura)', 'consulta@contas.synetiq.com.br', 'CONSULTA'],
         ];
         $now = now_sql();
         foreach ($defs as [$name, $email, $role]) {
@@ -28,7 +28,7 @@ final class Demo
             }
         }
         $stmt = $pdo->prepare('SELECT * FROM `User` WHERE email = ? LIMIT 1');
-        $stmt->execute(['master@pollicontas.synetiq.com.br']);
+        $stmt->execute(['master@contas.synetiq.com.br']);
         return $stmt->fetch();
     }
 
@@ -65,7 +65,7 @@ final class Demo
             . "3 0 obj<</Type/Page/MediaBox[0 0 300 144]/Parent 2 0 R/Contents 4 0 R"
             . "/Resources<</Font<</F1 5 0 R>>>>>>endobj\n"
             . "4 0 obj<</Length 62>>stream\n"
-            . "BT /F1 12 Tf 18 100 Td (Contrato demo POLLICONTAS) Tj ET\n"
+            . "BT /F1 12 Tf 18 100 Td (Contrato demo CONTAS) Tj ET\n"
             . "endstream\nendobj\n"
             . "5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\n"
             . "trailer<</Size 6/Root 1 0 R>>\n%%EOF\n";

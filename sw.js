@@ -1,5 +1,5 @@
-/* POLLICONTAS PWA — Service Worker */
-const CACHE_VERSION = 'pollicontas-app-v10';
+/* CONTAS PWA — Service Worker */
+const CACHE_VERSION = 'contas-app-v1';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -8,8 +8,8 @@ self.addEventListener('install', (event) => {
       const base = self.registration.scope;
       const assets = [
         base + 'login.php',
-        base + 'assets/img/pollicontas-logo.png',
-        base + 'assets/img/pollicontas-logo-128.png',
+        base + 'assets/img/contas-logo.png',
+        base + 'assets/img/contas-logo-128.png',
         base + 'assets/img/icons/icon-192.png',
         base + 'assets/img/icons/icon-512.png',
         base + 'manifest.php',
@@ -86,7 +86,7 @@ async function networkFirst(req) {
     const login = await cache.match(new URL('login.php', self.registration.scope).href);
     if (login) return login;
     return new Response(
-      '<!DOCTYPE html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline</title><body style="font-family:system-ui;padding:2rem;background:#0a254a;color:#fff"><h1>POLLICONTAS</h1><p>Você está offline. Conecte-se à internet para continuar.</p></body></html>',
+      '<!DOCTYPE html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline</title><body style="font-family:system-ui;padding:2rem;background:#0a254a;color:#fff"><h1>CONTAS</h1><p>Você está offline. Conecte-se à internet para continuar.</p></body></html>',
       { headers: { 'Content-Type': 'text/html; charset=utf-8' }, status: 503 }
     );
   }

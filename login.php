@@ -28,7 +28,7 @@ if (request_method() === 'POST') {
 <body class="login-shell" data-base="<?= e(rtrim(env('APP_BASE', '') ?: '', '/')) ?>">
   <div class="login-card animate-rise">
     <div class="login-brand">
-      <img src="<?= e(asset('assets/img/pollicontas-logo.png')) ?>" alt="<?= e(APP_NAME) ?>" width="52" height="52">
+      <img src="<?= e(asset('assets/img/contas-logo.png')) ?>" alt="<?= e(APP_NAME) ?>" width="52" height="52">
       <div>
         <div class="display"><?= e(APP_NAME) ?></div>
         <div class="muted"><?= e(APP_DOMAIN) ?></div>
@@ -66,11 +66,12 @@ if (request_method() === 'POST') {
       <button class="btn btn-primary" type="submit" style="width:100%">Entrar no dashboard</button>
     </form>
     <div style="margin-top:1.25rem;font-size:.85rem" class="muted">
-      Sistema <strong>interno</strong>: use o e-mail e a senha cadastrados. Só o perfil <strong>Master</strong> altera dados.
+      Sistema <strong>interno</strong> de prestação de contas: use o e-mail e a senha cadastrados. Só o perfil <strong>Master</strong> altera dados.
     </div>
-    <a class="login-synetiq" href="https://www.synetiq.com.br" target="_blank" rel="noopener noreferrer" title="SynetIQ — Soluções Digitais Inteligentes">
-      <img src="<?= e(asset('assets/img/synetiq-wordmark-sm.png')) ?>" alt="SynetIQ — Soluções Digitais Inteligentes" width="160" height="52" loading="lazy">
+    <a class="login-synetiq" href="<?= e(APP_VENDOR_URL) ?>" target="_blank" rel="noopener noreferrer" title="<?= e(APP_VENDOR . ' — ' . APP_VENDOR_TAGLINE) ?>">
+      <img src="<?= e(asset('assets/img/synetiq-wordmark-sm.png')) ?>" alt="<?= e(APP_VENDOR . ' — ' . APP_VENDOR_TAGLINE) ?>" width="160" height="52" loading="lazy">
     </a>
+    <p class="muted" style="margin:.55rem 0 0;font-size:.75rem;text-align:center">Desenvolvido por <a href="<?= e(APP_VENDOR_URL) ?>" target="_blank" rel="noopener noreferrer"><?= e(APP_VENDOR) ?></a></p>
   </div>
   <?php require __DIR__ . '/templates/pwa_install.php'; ?>
   <?php require __DIR__ . '/templates/back_to_top.php'; ?>

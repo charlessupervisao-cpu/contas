@@ -261,7 +261,7 @@ function http_get(string $url, int $timeout = 10, array $headers = []): ?string
         }
     }
     if (!$hasUa) {
-        $headers[] = 'User-Agent: POLLICONTAS/1.0';
+        $headers[] = 'User-Agent: CONTAS/1.0 (+https://contas.synetiq.com.br)';
     }
 
     if (function_exists('curl_init')) {
