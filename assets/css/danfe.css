@@ -1,0 +1,138 @@
+.danfe-body {
+  background: #e8eef2;
+  min-height: 100svh;
+  padding: 1rem;
+}
+
+.danfe-toolbar {
+  max-width: 920px;
+  margin: 0 auto 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.danfe-sheet {
+  max-width: 920px;
+  margin: 0 auto;
+  background: #fff;
+  border: 2px solid #1e293b;
+  padding: 1.25rem 1.4rem 1.6rem;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, .12);
+  color: #0f172a;
+}
+
+.danfe-header {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 1rem;
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 720px) {
+  .danfe-header { grid-template-columns: 1fr; }
+}
+
+.danfe-title {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.danfe-sub { font-size: .8rem; color: #475569; }
+
+.danfe-keybox {
+  border: 1px solid #334155;
+  padding: .75rem;
+  background: #f8fafc;
+}
+
+.danfe-key {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .95rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  word-break: break-all;
+}
+
+.danfe-barcode {
+  margin-top: .55rem;
+  font-family: "Libre Barcode 128", ui-monospace, monospace;
+  font-size: .62rem;
+  letter-spacing: .18em;
+  overflow: hidden;
+  white-space: nowrap;
+  border-top: 8px solid #0f172a;
+  border-bottom: 8px solid #0f172a;
+  padding: .2rem 0;
+  color: #0f172a;
+  background: repeating-linear-gradient(
+    90deg,
+    #0f172a 0 1px,
+    transparent 1px 3px
+  );
+  text-indent: -9999px;
+  height: 42px;
+}
+
+.danfe-alert {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: .75rem 1rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  font-size: .9rem;
+}
+
+.danfe-section {
+  border: 1px solid #94a3b8;
+  margin-bottom: .75rem;
+}
+
+.danfe-section h3 {
+  margin: 0;
+  padding: .35rem .65rem;
+  background: #e2e8f0;
+  font-size: .72rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.danfe-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+}
+
+.danfe-cell {
+  padding: .55rem .65rem;
+  border-top: 1px solid #cbd5e1;
+  border-right: 1px solid #cbd5e1;
+  min-height: 3.4rem;
+}
+
+.danfe-cell:nth-child(4n) { border-right: 0; }
+.danfe-cell.span-2 { grid-column: span 2; }
+.danfe-cell.span-4 { grid-column: span 4; border-right: 0; }
+
+.danfe-value { font-size: 1.15rem; color: #0f766e; }
+
+.danfe-footer {
+  margin-top: 1rem;
+  font-size: .78rem;
+  color: #475569;
+  border-top: 1px dashed #94a3b8;
+  padding-top: .75rem;
+}
+
+@media print {
+  .no-print { display: none !important; }
+  .danfe-body { background: #fff; padding: 0; }
+  .danfe-sheet { box-shadow: none; border-width: 1px; max-width: 100%; }
+}

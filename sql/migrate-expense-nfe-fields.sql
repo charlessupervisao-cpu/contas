@@ -1,0 +1,14 @@
+-- Campos de NF-e no LANÇAMENTO (Expense), não no cadastro de fornecedor.
+ALTER TABLE `Expense` ADD COLUMN `naturezaOp` VARCHAR(191) NULL;
+ALTER TABLE `Expense` ADD COLUMN `modelo` VARCHAR(191) NULL;
+ALTER TABLE `Expense` ADD COLUMN `dataEmissao` DATE NULL;
+ALTER TABLE `Expense` ADD COLUMN `numeroNf` VARCHAR(191) NULL;
+ALTER TABLE `Expense` ADD COLUMN `numeroSerie` VARCHAR(191) NULL;
+ALTER TABLE `Expense` ADD COLUMN `ue` VARCHAR(191) NULL;
+ALTER TABLE `Expense` ADD COLUMN `unidadeArrecadadora` VARCHAR(191) NULL;
+ALTER TABLE `Expense` ADD COLUMN `dsUe` VARCHAR(191) NULL;
+ALTER TABLE `Expense` ADD COLUMN `nfeLink` TEXT NULL;
+ALTER TABLE `Expense` ADD COLUMN `importSource` VARCHAR(191) NULL;
+
+ALTER TABLE `Supplier` ADD COLUMN `activityType` VARCHAR(191) NULL;
+ALTER TABLE `Supplier` ADD COLUMN `birthDate` DATE NULL;
