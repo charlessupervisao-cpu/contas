@@ -2,7 +2,7 @@
 require_once dirname(__DIR__) . '/bootstrap.php';
 $user = Auth::requireLogin('despesas');
 $activeModule = 'despesas';
-$pageTitle = 'Despesas';
+$pageTitle = 'Despesas efetuadas';
 $pdo = Database::pdo();
 $canWrite = can_launch($user['role']);
 $editId = trim((string) get('id', ''));
@@ -79,6 +79,13 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
 ?>
 <div class="page-despesas">
 
+<div class="je-banner animate-rise">
+  <div>
+    <strong>Conta+JE §9 · Despesas efetuadas</strong>
+    <p class="muted" style="margin:.25rem 0 0;line-height:1.4">Natureza, pagamento, quantidade/valor unitário e NF — campos do portal Conta+JE.</p>
+  </div>
+</div>
+
 <?php if ($vf): ?>
 <div class="panel desp-limit" style="margin-bottom:1rem">
   <div class="desp-limit-head">
@@ -94,10 +101,11 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
 
 <div class="desp-toolbar">
   <div class="desp-toolbar-main">
-    <a class="btn btn-ghost" href="<?= e(url_path('admin/index.php')) ?>">← Voltar</a>
+    <a class="btn btn-ghost" href="<?= e(url_path('admin/index.php')) ?>">← Painel</a>
     <?php if ($canWrite): ?>
       <a class="btn btn-primary" href="<?= e(url_path('admin/lancamento.php?tipo=DESPESA')) ?>">Nova despesa</a>
     <?php endif; ?>
+    <a class="btn btn-ghost" href="<?= e(url_path('admin/relatorios.php?tipo=despesas-efetuadas&formato=oficial')) ?>">Relatório Conta+JE</a>
   </div>
   <div class="desp-summary">
     <div class="desp-summary-total">
@@ -145,10 +153,11 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
     <tr>
       <th>Data</th>
       <th>Status</th>
-      <th>Categoria</th>
+      <th>Natureza</th>
       <th>Fornecedor</th>
       <th>Tipo op.</th>
       <th>Nº NF</th>
+      <th>Pagamento</th>
       <th>Dt emissão</th>
       <th>Conta</th>
       <th>Valor</th>
@@ -156,12 +165,14 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
     </tr>
   </thead>
   <tbody>
-  <?php if (!$rows): ?><tr><td colspan="10" class="empty">Nenhuma despesa.</td></tr><?php endif; ?>
+  <?php if (!$rows): ?><tr><td colspan="11" class="empty">Nenhuma despesa.</td></tr><?php endif; ?>
   <?php foreach ($rows as $r): ?>
     <?php
       $st = (string) ($r['status'] ?? 'PAGA');
       $stLabel = EXPENSE_STATUSES[$st] ?? $st;
       $isFutura = $st === 'FUTURA';
+      $payCode = (string) ($r['paymentMethod'] ?? '');
+      $payLabel = PAYMENT_METHODS[$payCode] ?? ($payCode !== '' ? $payCode : '—');
     ?>
     <tr>
       <td><?= e(date_br($r['date'])) ?></td>
@@ -178,6 +189,12 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
       </td>
       <td><?= e($opLabel($r['naturezaOp'] ?? null)) ?></td>
       <td><?= e((string) (($r['numeroNf'] ?? '') !== '' ? $r['numeroNf'] : '—')) ?></td>
+      <td>
+        <?= e($payLabel) ?>
+        <?php if (!empty($r['paymentDate'])): ?>
+          <div class="muted" style="font-size:.72rem"><?= e(date_br($r['paymentDate'])) ?></div>
+        <?php endif; ?>
+      </td>
       <td><?= e(!empty($r['dataEmissao']) ? date_br($r['dataEmissao']) : '—') ?></td>
       <td><?= e($r['accountLabel'] ?: '—') ?></td>
       <td><strong><?= e(money_br($r['amount'])) ?></strong></td>

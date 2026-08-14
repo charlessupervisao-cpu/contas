@@ -46,10 +46,15 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
     </div>
   </div>
   <div class="page-toolbar-side">
+    <a class="btn btn-primary" href="<?= e(url_path('admin/entrega.php')) ?>">Pacote Conta+JE / TSE</a>
     <a class="btn btn-ghost" href="<?= e(url_path('admin/inconsistencias.php')) ?>">Inconsistências</a>
     <a class="btn btn-ghost" href="<?= e(url_path('admin/base-legal.php')) ?>">Base TRE-GO</a>
     <a class="btn btn-secondary" href="<?= e(ElectoralRules::CONTA_JE_URL) ?>" target="_blank" rel="noopener">Abrir Conta+JE</a>
   </div>
+</div>
+
+<div class="je-banner animate-rise">
+  Relatórios no formato oficial Conta+JE (§11). Use CSV ou o <a href="<?= e(url_path('admin/entrega.php')) ?>">pacote ZIP de entrega</a> para conferir/carregar no portal do TSE.
 </div>
 
 <p class="muted" style="margin:0 0 1rem;max-width:52rem;line-height:1.45">
@@ -90,7 +95,7 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
     <li>Confira FCC, estimáveis e doações pela internet.</li>
     <li>Confira despesas efetuadas, não pagas e doações a candidatos/partidos.</li>
     <li>Verifique <strong>recibos eleitorais</strong> e <strong>inconsistências</strong>.</li>
-    <li>Entregue a prestação no Conta+JE na janela TRE-GO correspondente.</li>
+    <li>Baixe o <a href="<?= e(url_path('admin/entrega.php')) ?>">pacote Conta+JE (ZIP)</a> e entregue no portal Conta+JE na janela TRE-GO.</li>
   </ol>
 </div>
 

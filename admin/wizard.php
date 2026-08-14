@@ -153,16 +153,17 @@ if (request_method() === 'POST') {
 
 $status = Demo::wizardStatus();
 $steps = [
-    ['campanha', 'Campanha + foto + endereço', '/admin/wizard.php', true],
-    ['contas', 'Contas bancárias (Doações / FP / FEFC)', '/admin/contas.php', true],
-    ['representantes', 'Representantes legais', '/admin/representantes.php', true],
-    ['vinculos', 'Vínculos', '/admin/vinculos.php', true],
+    ['campanha', 'Qualificação do prestador (Conta+JE)', '/admin/wizard.php', true],
+    ['contas', 'Contas bancárias Doações / FP / FEFC', '/admin/contas.php', true],
+    ['representantes', 'Representantes legais (OAB/CRC)', '/admin/representantes.php', true],
+    ['vinculos', 'Vínculos de fontes × contas', '/admin/vinculos.php', true],
     ['fornecedores', 'Fornecedores', '/admin/fornecedores.php', true],
     ['veiculos', 'Veículos', '/admin/veiculos.php', false],
-    ['cabos', 'Cabos', '/admin/cabos.php', false],
-    ['receitas', 'Receitas / Despesas', '/admin/lancamento.php', true],
-    ['relatorios', 'Relatórios Conta+JE / TRE-GO', '/admin/relatorios.php', true],
+    ['cabos', 'Militância / contratos', '/admin/cabos.php', false],
+    ['receitas', 'Doações e despesas', '/admin/lancamento.php', true],
+    ['relatorios', 'Relatórios Conta+JE §11', '/admin/relatorios.php', true],
     ['inconsistencias', 'Verificar inconsistências', '/admin/inconsistencias.php', true],
+    ['entrega', 'Pacote de entrega Conta+JE / TSE', '/admin/entrega.php', true],
 ];
 $photoUrl = !empty($campaign['photoUrl']) ? url_path(ltrim((string) $campaign['photoUrl'], '/')) : '';
 $launchCounts = $campaign ? Demo::financialLaunchCounts((string) $campaign['id']) : [
@@ -171,11 +172,26 @@ $launchCounts = $campaign ? Demo::financialLaunchCounts((string) $campaign['id']
 require dirname(__DIR__) . '/templates/admin_layout_start.php';
 ?>
 <div class="page-form">
+<div class="je-banner animate-rise">
+  <div>
+    <strong>Qualificação Conta+JE · TSE</strong>
+    <p class="muted" style="margin:.25rem 0 0;line-height:1.45;max-width:42rem">
+      Preencha os mesmos dados exigidos no Conta+JE (candidato, CNPJ, endereço, contas e representantes).
+      Depois gere o pacote de envio em <a href="<?= e(url_path('admin/entrega.php')) ?>">Entrega ao Conta+JE / TSE</a>.
+    </p>
+  </div>
+</div>
 <div class="grid grid-2">
-  <div class="panel">
-    <h3 class="display" style="margin-top:0">Progresso</h3>
+  <div class="panel je-section">
+    <div class="je-kicker">Fluxo Conta+JE</div>
+    <h3 class="display" style="margin-top:.15rem">Progresso da prestação</h3>
     <?php foreach ($steps as [$key,$label,$href,$required]): ?>
-      <?php $done = ($status[$key] ?? 0) > 0 || ($key==='campanha' && ($status['campanha']??0)>0); ?>
+      <?php
+        $done = ($status[$key] ?? 0) > 0 || ($key === 'campanha' && ($status['campanha'] ?? 0) > 0);
+        if ($key === 'entrega') {
+            $done = ($status['relatorios'] ?? 0) > 0 || ($status['inconsistencias'] ?? 0) > 0 || $done;
+        }
+      ?>
       <div class="row-actions" style="justify-content:space-between;padding:.55rem 0;border-bottom:1px solid var(--line)">
         <div>
           <strong><?= e($label) ?></strong>
@@ -188,8 +204,9 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
       </div>
     <?php endforeach; ?>
   </div>
-  <div class="panel form-card">
-    <h3 class="display" style="margin-top:0">Dados da campanha</h3>
+  <div class="panel form-card je-section">
+    <div class="je-kicker">Conta+JE · Módulo Qualificação</div>
+    <h3 class="display" style="margin-top:.15rem">Dados da campanha</h3>
     <form method="post" enctype="multipart/form-data">
       <div class="field">
         <label class="label">Foto do deputado (página inicial)</label>
@@ -243,8 +260,8 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
       <div class="field"><label class="label">Situação</label><input class="input" name="situation" value="<?= e($campaign['situation'] ?? '') ?>"></div>
       <label class="row-actions"><input type="checkbox" name="reelection" value="1" <?= !empty($campaign['reelection'])?'checked':'' ?>> Reeleição</label>
 
-      <h3 class="display" style="margin:1.25rem 0 .5rem;font-size:1.05rem">Qualificação Conta+JE</h3>
-      <p class="muted" style="font-size:.82rem;margin:0 0 .75rem">Endereço e contatos exigidos na análise preventiva (Res.-TSE 23.607/2019).</p>
+      <div class="je-section-title" style="margin-top:1.1rem">Qualificação Conta+JE — endereço e contatos</div>
+      <p class="muted" style="font-size:.82rem;margin:0 0 .75rem">Campos exigidos na análise preventiva (Res.-TSE 23.607/2019 · Manual Conta+JE).</p>
       <div class="grid grid-2">
         <div class="field"><label class="label">Título eleitoral</label><input class="input" name="electoralTitle" value="<?= e((string) ($campaign['electoralTitle'] ?? '')) ?>"></div>
         <div class="field"><label class="label">Telefone</label><input class="input" name="phone" data-mask="phone" value="<?= e((string) ($campaign['phone'] ?? '')) ?>"></div>

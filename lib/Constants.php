@@ -4,7 +4,7 @@ declare(strict_types=1);
 const APP_NAME = 'CONTAS';
 const APP_TAGLINE = 'Prestação de contas para políticos';
 /** Build publicada no deploy — use para confirmar se o cPanel está atualizado */
-const APP_BUILD = '2026.08.14-deploy-completo';
+const APP_BUILD = '2026.08.14-contamaisje-ui';
 const ELECTION_YEAR = 2026;
 /** Fim da janela do demonstrativo / 1º turno (GO 2026) */
 const CAMPAIGN_END_DATE = '2026-10-04';
@@ -51,6 +51,18 @@ const RESOURCE_SPECIES = [
     'ESPECIE' => 'Em Espécie',
     'ESTIMAVEL' => 'Estimável em Dinheiro',
     'OUTROS' => 'Outros títulos de crédito',
+];
+
+/** Formas de pagamento Conta+JE §9.3 */
+const PAYMENT_METHODS = [
+    'BOLETO' => 'Boleto bancário',
+    'CARTAO_CREDITO' => 'Cartão de crédito',
+    'CARTAO_DEBITO' => 'Cartão de débito',
+    'CHEQUE' => 'Cheque',
+    'DEBITO_CONTA' => 'Débito em conta',
+    'ESPECIE' => 'Espécie',
+    'PIX' => 'PIX',
+    'TRANSFERENCIA' => 'Transferência eletrônica',
 ];
 
 const REPRESENTATIVE_ROLES = [
@@ -201,35 +213,33 @@ const REVENUE_SOURCE_COLORS = [
 ];
 
 /**
- * Menu lateral (ordem fixa):
- * primary → ops → config (acordeão Configurações).
+ * Menu lateral alinhado ao Conta+JE (TSE):
+ * primary → ops → config.
  */
 const MODULES = [
-    // Bloco principal
-    ['id' => 'dashboard', 'label' => 'Dashboard', 'href' => '/admin/index.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'primary', 'shortcut' => 'I'],
-    ['id' => 'movimentacoes', 'label' => 'Movimentação', 'href' => '/admin/movimentacoes.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary', 'shortcut' => 'M'],
-    ['id' => 'receitas', 'label' => 'Receitas', 'href' => '/admin/receitas.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary', 'shortcut' => 'R', 'fkey' => 'F2'],
-    ['id' => 'despesas', 'label' => 'Despesas', 'href' => '/admin/despesas.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary', 'shortcut' => 'D', 'fkey' => 'F3'],
-    ['id' => 'contas-pendentes', 'label' => 'Contas pendentes', 'href' => '/admin/contas-pendentes.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary'],
-    ['id' => 'lancamento', 'label' => 'Novo lançamento', 'href' => '/admin/lancamento.php', 'roles' => ['MASTER'], 'group' => 'primary', 'shortcut' => 'L'],
+    ['id' => 'dashboard', 'label' => 'Painel da prestação', 'href' => '/admin/index.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'primary', 'shortcut' => 'I'],
+    ['id' => 'wizard', 'label' => 'Qualificação do prestador', 'href' => '/admin/wizard.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary'],
+    ['id' => 'representantes', 'label' => 'Representantes legais', 'href' => '/admin/representantes.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'primary'],
+    ['id' => 'contas', 'label' => 'Contas bancárias de campanha', 'href' => '/admin/contas.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary'],
+    ['id' => 'lancamento', 'label' => 'Lançar receita / despesa', 'href' => '/admin/lancamento.php', 'roles' => ['MASTER'], 'group' => 'primary', 'shortcut' => 'L'],
+    ['id' => 'receitas', 'label' => 'Doações recebidas', 'href' => '/admin/receitas.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary', 'shortcut' => 'R', 'fkey' => 'F2'],
+    ['id' => 'despesas', 'label' => 'Despesas efetuadas', 'href' => '/admin/despesas.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary', 'shortcut' => 'D', 'fkey' => 'F3'],
+    ['id' => 'movimentacoes', 'label' => 'Movimentação financeira', 'href' => '/admin/movimentacoes.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary', 'shortcut' => 'M'],
+    ['id' => 'contas-pendentes', 'label' => 'Despesas não pagas', 'href' => '/admin/contas-pendentes.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary'],
     ['id' => 'inconsistencias', 'label' => 'Verificar inconsistências', 'href' => '/admin/inconsistencias.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary'],
-    ['id' => 'relatorios', 'label' => 'Relatórios Conta+JE', 'href' => '/admin/relatorios.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'primary'],
+    ['id' => 'relatorios', 'label' => 'Relatórios e recibos', 'href' => '/admin/relatorios.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'primary'],
+    ['id' => 'entrega', 'label' => 'Entrega ao Conta+JE / TSE', 'href' => '/admin/entrega.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary'],
     ['id' => 'base-legal', 'label' => 'Base legal TRE-GO 2026', 'href' => '/admin/base-legal.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'primary'],
-    // Bloco operacional
-    ['id' => 'conciliacao', 'label' => 'Conciliação', 'href' => '/admin/conciliacao.php', 'roles' => ['MASTER', 'FINANCEIRO'], 'group' => 'ops'],
+    ['id' => 'conciliacao', 'label' => 'Conciliação bancária', 'href' => '/admin/conciliacao.php', 'roles' => ['MASTER', 'FINANCEIRO'], 'group' => 'ops'],
     ['id' => 'fornecedores', 'label' => 'Fornecedores', 'href' => '/admin/fornecedores.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'ops'],
-    // Configurações (acordeão) — Manual primeiro para fácil acesso
     ['id' => 'manual', 'label' => 'MANUAL DE USO', 'href' => '/admin/manual.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'config'],
-    ['id' => 'contas', 'label' => 'Contas bancárias', 'href' => '/admin/contas.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'config'],
-    ['id' => 'representantes', 'label' => 'Representantes legais', 'href' => '/admin/representantes.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'config'],
-    ['id' => 'categorias', 'label' => 'Categorias de despesa', 'href' => '/admin/categorias.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'config'],
+    ['id' => 'categorias', 'label' => 'Naturezas de despesa', 'href' => '/admin/categorias.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'config'],
     ['id' => 'equipes', 'label' => 'Equipes', 'href' => '/admin/equipes.php', 'roles' => ['MASTER', 'RH', 'CONSULTA'], 'group' => 'config'],
     ['id' => 'veiculos', 'label' => 'Veículos', 'href' => '/admin/veiculos.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'config'],
-    ['id' => 'cabos', 'label' => 'Cabos / Contratos', 'href' => '/admin/cabos.php', 'roles' => ['MASTER', 'RH', 'CONSULTA'], 'group' => 'config'],
+    ['id' => 'cabos', 'label' => 'Militância / contratos', 'href' => '/admin/cabos.php', 'roles' => ['MASTER', 'RH', 'CONSULTA'], 'group' => 'config'],
     ['id' => 'vinculos', 'label' => 'Vínculos de contas', 'href' => '/admin/vinculos.php', 'roles' => ['MASTER', 'FINANCEIRO'], 'group' => 'config'],
     ['id' => 'saldos', 'label' => 'Ajuste de saldos', 'href' => '/admin/saldos.php', 'roles' => ['MASTER', 'FINANCEIRO'], 'group' => 'config'],
-    ['id' => 'wizard', 'label' => 'Campanha / foto', 'href' => '/admin/wizard.php', 'roles' => ['MASTER'], 'group' => 'config'],
-    ['id' => 'usuarios', 'label' => 'Usuários / perfis', 'href' => '/admin/usuarios.php', 'roles' => ['MASTER'], 'group' => 'config'],
+    ['id' => 'usuarios', 'label' => 'Administrar acessos', 'href' => '/admin/usuarios.php', 'roles' => ['MASTER'], 'group' => 'config'],
     ['id' => 'diario', 'label' => 'Diário do dia', 'href' => '/admin/diario.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'config'],
 ];
 
@@ -241,6 +251,7 @@ const VIEW_ROLES = [
     'contas-pendentes' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
     'inconsistencias' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
     'relatorios' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'],
+    'entrega' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
     'base-legal' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'],
     'cabos' => ['MASTER', 'RH', 'CONSULTA'],
     'equipes' => ['MASTER', 'RH', 'CONSULTA'],
@@ -251,11 +262,11 @@ const VIEW_ROLES = [
     'veiculos' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
     'fornecedores' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
     'saldos' => ['MASTER', 'FINANCEIRO'],
-    'lancamento' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
+    'lancamento' => ['MASTER'],
     'vinculos' => ['MASTER', 'FINANCEIRO'],
     'diario' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'],
     'usuarios' => ['MASTER'],
-    'wizard' => ['MASTER'],
+    'wizard' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
     'manual' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'],
 ];
 

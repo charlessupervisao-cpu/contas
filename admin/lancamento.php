@@ -56,6 +56,11 @@ if (request_method() === 'POST') {
         'naturezaOp' => (string) post('naturezaOp', ''),
         'dataEmissao' => (string) post('dataEmissao', ''),
         'numeroNf' => (string) post('numeroNf', ''),
+        'paymentMethod' => (string) post('paymentMethod', ''),
+        'paymentDate' => (string) post('paymentDate', ''),
+        'paymentResourceOrigin' => (string) post('paymentResourceOrigin', ''),
+        'quantity' => (string) post('quantity', ''),
+        'unitValue' => (string) post('unitValue', ''),
         'caboId' => (string) post('caboId', ''),
         'vehicleId' => (string) post('vehicleId', ''),
         'installments' => (string) $installments,
@@ -86,6 +91,11 @@ if (request_method() === 'POST') {
         'naturezaOp' => post('naturezaOp'),
         'dataEmissao' => post('dataEmissao'),
         'numeroNf' => post('numeroNf'),
+        'paymentMethod' => post('paymentMethod'),
+        'paymentDate' => post('paymentDate'),
+        'paymentResourceOrigin' => post('paymentResourceOrigin'),
+        'quantity' => post('quantity'),
+        'unitValue' => post('unitValue'),
         'caboId' => post('caboId') ?: null,
         'vehicleId' => post('vehicleId') ?: null,
         'installments' => $installments,
@@ -121,9 +131,10 @@ $val = static function (string $key, string $default = '') use ($old): string {
 require dirname(__DIR__) . '/templates/admin_layout_start.php';
 ?>
 <div class="page-form">
-<div class="panel form-card animate-rise">
-  <h2 class="display" style="margin-top:0">Lançamento</h2>
-  <p class="muted" style="margin-top:0"><?= e(($user['name'] ?? '') . ' · ' . (ROLE_LABELS[$user['role']] ?? $user['role'])) ?></p>
+<div class="panel form-card animate-rise je-section">
+  <div class="je-kicker">Conta+JE · Receitas §8 · Despesas §9</div>
+  <h2 class="display" style="margin-top:.2rem">Lançamento de receita / despesa</h2>
+  <p class="muted" style="margin-top:0">Campos alinhados ao Conta+JE (tipo, espécie, recibo, natureza, pagamento e NF).</p>
 
   <?php if (!can_launch($user['role'])): ?>
     <div class="alert alert-warn">Somente o perfil Master pode lançar. Você está em modo consulta.</div>
@@ -353,6 +364,48 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
             </option>
           <?php endforeach; ?>
         </select>
+      </div>
+
+      <div class="panel nfe-launch-box">
+        <strong class="nfe-launch-title">Detalhamento Conta+JE <span class="muted" style="font-weight:500">(lançamento)</span></strong>
+        <div class="grid grid-2">
+          <div class="field">
+            <label class="label">Quantidade</label>
+            <input class="input" name="quantity" inputmode="decimal" placeholder="1" value="<?= e($val('quantity')) ?>">
+          </div>
+          <div class="field">
+            <label class="label">Valor unitário</label>
+            <input class="input" name="unitValue" data-mask="money" inputmode="decimal" placeholder="0,00" value="<?= e($val('unitValue')) ?>">
+          </div>
+        </div>
+      </div>
+
+      <div class="panel nfe-launch-box">
+        <strong class="nfe-launch-title">Dados do pagamento (Conta+JE §9.3)</strong>
+        <div class="grid grid-2">
+          <div class="field">
+            <label class="label req">Forma de pagamento</label>
+            <select class="select" name="paymentMethod">
+              <option value="">— selecionar —</option>
+              <?php foreach (PAYMENT_METHODS as $code => $lab): ?>
+                <option value="<?= e($code) ?>" <?= $val('paymentMethod') === $code ? 'selected' : '' ?>><?= e($lab) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="field">
+            <label class="label">Data do pagamento</label>
+            <input class="input" type="date" name="paymentDate" value="<?= e($val('paymentDate', $oldDate)) ?>">
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Fonte do recurso do pagamento</label>
+          <select class="select" name="paymentResourceOrigin">
+            <option value="">— mesma da conta bancária —</option>
+            <?php foreach (BANK_RESOURCE_ORIGINS as $code => $lab): ?>
+              <option value="<?= e($code) ?>" <?= $val('paymentResourceOrigin') === $code ? 'selected' : '' ?>><?= e($lab) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
       </div>
 
       <div class="panel nfe-launch-box">

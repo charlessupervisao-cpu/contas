@@ -85,10 +85,13 @@ if (request_method() === 'POST' && $canWrite) {
         $bankName = trim((string) post('bankName', ''));
         $bankCode = trim((string) post('bankCode', ''));
         $agency = trim((string) post('agency', ''));
+        $agencyDv = trim((string) post('agencyDv', ''));
         $accountNumber = trim((string) post('accountNumber', ''));
+        $accountDv = trim((string) post('accountDv', ''));
         $accountType = trim((string) post('accountType', 'Corrente')) ?: 'Corrente';
         $balance = parse_money_input((string) post('balance', '0'));
         $resourceOrigin = trim((string) post('resourceOrigin', ''));
+        $racNumber = trim((string) post('racNumber', ''));
         if ($resourceOrigin !== '' && !isset(BANK_RESOURCE_ORIGINS[$resourceOrigin])) {
             $errors[] = 'Fonte do recurso inválida.';
             $resourceOrigin = '';
@@ -127,8 +130,19 @@ if (request_method() === 'POST' && $canWrite) {
 
         if (!$errors && $campaign) {
             $originVal = $resourceOrigin !== '' ? $resourceOrigin : null;
+            $agencyDvVal = $agencyDv !== '' ? $agencyDv : null;
+            $accountDvVal = $accountDv !== '' ? $accountDv : null;
+            $racVal = $racNumber !== '' ? $racNumber : null;
             if ($id !== '') {
-                if ($hasResourceOrigin && $hasOpenedAt) {
+                try {
+                    $pdo->prepare(
+                        'UPDATE `BankAccount` SET label=?, bankName=?, bankCode=?, agency=?, agencyDv=?, accountNumber=?, accountDv=?, accountType=?, resourceOrigin=?, openedAt=?, racNumber=?, depositCpf=?, depositCnpj=?, updatedAt=?
+                         WHERE id=? AND campaignId=?'
+                    )->execute([
+                        $label, $bankName, $bankCode, $agency, $agencyDvVal, $accountNumber, $accountDvVal, $accountType,
+                        $originVal, $openedAt, $racVal, $depositCpf, $depositCnpj, $now, $id, $cid,
+                    ]);
+                } catch (Throwable) {
                     $pdo->prepare(
                         'UPDATE `BankAccount` SET label=?, bankName=?, bankCode=?, agency=?, accountNumber=?, accountType=?, resourceOrigin=?, openedAt=?, depositCpf=?, depositCnpj=?, updatedAt=?
                          WHERE id=? AND campaignId=?'
@@ -136,11 +150,6 @@ if (request_method() === 'POST' && $canWrite) {
                         $label, $bankName, $bankCode, $agency, $accountNumber, $accountType,
                         $originVal, $openedAt, $depositCpf, $depositCnpj, $now, $id, $cid,
                     ]);
-                } else {
-                    $pdo->prepare(
-                        'UPDATE `BankAccount` SET label=?, bankName=?, bankCode=?, agency=?, accountNumber=?, accountType=?, depositCpf=?, depositCnpj=?, updatedAt=?
-                         WHERE id=? AND campaignId=?'
-                    )->execute([$label, $bankName, $bankCode, $agency, $accountNumber, $accountType, $depositCpf, $depositCnpj, $now, $id, $cid]);
                 }
                 audit_log($user['id'], 'UPDATE', 'BankAccount', $id, "Atualizou conta {$label}");
                 flash_set('ok', 'Conta atualizada.');
@@ -153,21 +162,21 @@ if (request_method() === 'POST' && $canWrite) {
                     redirect('/admin/contas.php');
                 }
                 $newId = cuid();
-                if ($hasResourceOrigin && $hasOpenedAt) {
+                try {
+                    $pdo->prepare(
+                        'INSERT INTO `BankAccount` (id, campaignId, label, bankName, bankCode, agency, agencyDv, accountNumber, accountDv, accountType, resourceOrigin, openedAt, racNumber, balance, depositCpf, depositCnpj, active, sortOrder, createdAt, updatedAt)
+                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?)'
+                    )->execute([
+                        $newId, $cid, $label, $bankName, $bankCode, $agency, $agencyDvVal, $accountNumber, $accountDvVal, $accountType,
+                        $originVal, $openedAt, $racVal, $balance, $depositCpf, $depositCnpj, $activeCount, $now, $now,
+                    ]);
+                } catch (Throwable) {
                     $pdo->prepare(
                         'INSERT INTO `BankAccount` (id, campaignId, label, bankName, bankCode, agency, accountNumber, accountType, resourceOrigin, openedAt, balance, depositCpf, depositCnpj, active, sortOrder, createdAt, updatedAt)
                          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?)'
                     )->execute([
                         $newId, $cid, $label, $bankName, $bankCode, $agency, $accountNumber, $accountType,
                         $originVal, $openedAt, $balance, $depositCpf, $depositCnpj, $activeCount, $now, $now,
-                    ]);
-                } else {
-                    $pdo->prepare(
-                        'INSERT INTO `BankAccount` (id, campaignId, label, bankName, bankCode, agency, accountNumber, accountType, balance, depositCpf, depositCnpj, active, sortOrder, createdAt, updatedAt)
-                         VALUES (?,?,?,?,?,?,?,?,?,?,?,1,?,?,?)'
-                    )->execute([
-                        $newId, $cid, $label, $bankName, $bankCode, $agency, $accountNumber, $accountType,
-                        $balance, $depositCpf, $depositCnpj, $activeCount, $now, $now,
                     ]);
                 }
                 audit_log($user['id'], 'CREATE', 'BankAccount', $newId, "Cadastrou conta {$label} · saldo inicial " . money_br($balance));
@@ -256,22 +265,28 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
   </div>
 
   <?php if ($canWrite): ?>
-  <div class="panel form-card" id="form-conta">
-    <h3 class="display" style="margin-top:0"><?= $edit ? 'Editar conta' : 'Nova conta' ?></h3>
+  <div class="panel form-card je-section" id="form-conta">
+    <div class="je-kicker">Conta+JE §7.5 · Contas bancárias de campanha</div>
+    <h3 class="display" style="margin-top:.2rem"><?= $edit ? 'Editar conta bancária' : 'Cadastrar conta bancária' ?></h3>
+    <p class="muted" style="margin-top:0">Informe Tipo/Fonte, Banco, Agência+DV, Conta+DV e data de abertura (RAC em até 10 dias do CNPJ).</p>
     <?php if ($errors): ?>
       <div class="alert alert-danger"><?php foreach ($errors as $err): ?><div><?= e($err) ?></div><?php endforeach; ?></div>
     <?php endif; ?>
     <form method="post" data-mask-form>
       <input type="hidden" name="action" value="save">
       <input type="hidden" name="id" value="<?= e((string) ($edit['id'] ?? '')) ?>">
-      <div class="field"><label class="label">Rótulo</label><input class="input" name="label" value="<?= e((string) ($edit['label'] ?? '')) ?>" required></div>
+      <div class="field"><label class="label req">Rótulo / identificação</label><input class="input" name="label" value="<?= e((string) ($edit['label'] ?? '')) ?>" required></div>
       <div class="grid grid-2">
-        <div class="field"><label class="label">Banco</label><input class="input" name="bankName" value="<?= e((string) ($edit['bankName'] ?? '')) ?>" required></div>
-        <div class="field"><label class="label">Código</label><input class="input" name="bankCode" value="<?= e((string) ($edit['bankCode'] ?? '')) ?>" required></div>
+        <div class="field"><label class="label req">Banco</label><input class="input" name="bankName" value="<?= e((string) ($edit['bankName'] ?? '')) ?>" required></div>
+        <div class="field"><label class="label req">Código do banco</label><input class="input" name="bankCode" value="<?= e((string) ($edit['bankCode'] ?? '')) ?>" required></div>
       </div>
       <div class="grid grid-2">
-        <div class="field"><label class="label">Agência</label><input class="input" name="agency" value="<?= e((string) ($edit['agency'] ?? '')) ?>" required></div>
-        <div class="field"><label class="label">Conta</label><input class="input" name="accountNumber" value="<?= e((string) ($edit['accountNumber'] ?? '')) ?>" required></div>
+        <div class="field"><label class="label req">Agência</label><input class="input" name="agency" value="<?= e((string) ($edit['agency'] ?? '')) ?>" required></div>
+        <div class="field"><label class="label">DV da agência</label><input class="input" name="agencyDv" maxlength="4" value="<?= e((string) ($edit['agencyDv'] ?? '')) ?>"></div>
+      </div>
+      <div class="grid grid-2">
+        <div class="field"><label class="label req">Conta</label><input class="input" name="accountNumber" value="<?= e((string) ($edit['accountNumber'] ?? '')) ?>" required></div>
+        <div class="field"><label class="label">DV da conta</label><input class="input" name="accountDv" maxlength="4" value="<?= e((string) ($edit['accountDv'] ?? '')) ?>"></div>
       </div>
       <div class="grid grid-2">
         <div class="field"><label class="label">Tipo</label><input class="input" name="accountType" value="<?= e((string) ($edit['accountType'] ?? 'Corrente')) ?>"></div>
@@ -291,22 +306,26 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
       ?>
       <div class="grid grid-2">
         <div class="field">
-          <label class="label">Fonte do recurso (Conta+JE)</label>
-          <select class="select" name="resourceOrigin">
+          <label class="label req">Fonte do recurso (Conta+JE)</label>
+          <select class="select" name="resourceOrigin" required>
             <option value="">— selecionar —</option>
             <?php foreach (BANK_RESOURCE_ORIGINS as $code => $lab): ?>
               <option value="<?= e($code) ?>" <?= $selOrigin === $code ? 'selected' : '' ?>><?= e($lab) ?></option>
             <?php endforeach; ?>
           </select>
           <div class="muted" style="font-size:.78rem;margin-top:.3rem">
-            Conta+JE §7.5: cada conta deve indicar a fonte — Fundo Partidário, Doações para Campanha ou FEFC.
+            Conta+JE §7.5 / TRE-GO: Doações para Campanha, FEFC ou Fundo Partidário (contas separadas).
           </div>
         </div>
         <div class="field">
           <label class="label">Data de abertura</label>
           <input class="input" type="date" name="openedAt" max="<?= e((new DateTimeImmutable('today'))->format('Y-m-d')) ?>" value="<?= e($openedVal) ?>">
-          <div class="muted" style="font-size:.78rem;margin-top:.3rem">Não pode ser data futura.</div>
+          <div class="muted" style="font-size:.78rem;margin-top:.3rem">Prazo: 10 dias após o CNPJ (RAC).</div>
         </div>
+      </div>
+      <div class="field">
+        <label class="label">Nº RAC / protocolo</label>
+        <input class="input" name="racNumber" value="<?= e((string) ($edit['racNumber'] ?? '')) ?>" placeholder="Requerimento de Abertura de Conta">
       </div>
       <?php
         $checkCpf = request_method() === 'POST'

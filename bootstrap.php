@@ -10,6 +10,7 @@ require_once $ROOT . '/lib/Helpers.php';
 require_once $ROOT . '/lib/Constants.php';
 require_once $ROOT . '/lib/ElectoralRules.php';
 require_once $ROOT . '/lib/Reports.php';
+require_once $ROOT . '/lib/ContaJeExport.php';
 require_once $ROOT . '/lib/Validators.php';
 require_once $ROOT . '/lib/Permissions.php';
 require_once $ROOT . '/lib/Database.php';

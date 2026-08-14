@@ -37,10 +37,11 @@ foreach ($configMods as $cm) {
         <img src="<?= e(asset('assets/img/contas-logo.png')) ?>" alt="<?= e(APP_NAME) ?>" width="46" height="46">
         <div>
           <div class="display"><?= e(APP_NAME) ?></div>
-          <div class="muted"><?= e(APP_TAGLINE) ?></div>
+          <div class="muted">Conta+JE · TSE <?= (int) ELECTION_YEAR ?></div>
         </div>
       </div>
       <nav aria-label="Menu principal">
+        <span class="nav-sep-label">Prestação Conta+JE</span>
         <?php foreach ($primaryMods as $mod): ?>
           <?php if (!in_array($user['role'], $mod['roles'], true)) continue; ?>
           <a class="<?= $activeModule === $mod['id'] ? 'active' : '' ?>" href="<?= e(url_path(ltrim($mod['href'], '/'))) ?>">
@@ -56,14 +57,16 @@ foreach ($configMods as $cm) {
           </a>
         <?php endforeach; ?>
 
-        <div class="nav-sep" role="separator" aria-hidden="true"></div>
-
-        <?php foreach ($opsMods as $mod): ?>
-          <?php if (!in_array($user['role'], $mod['roles'], true)) continue; ?>
-          <a class="<?= $activeModule === $mod['id'] ? 'active' : '' ?>" href="<?= e(url_path(ltrim($mod['href'], '/'))) ?>">
-            <?= e($mod['label']) ?>
-          </a>
-        <?php endforeach; ?>
+        <?php if ($opsMods): ?>
+          <div class="nav-sep" role="separator" aria-hidden="true"></div>
+          <span class="nav-sep-label">Operações</span>
+          <?php foreach ($opsMods as $mod): ?>
+            <?php if (!in_array($user['role'], $mod['roles'], true)) continue; ?>
+            <a class="<?= $activeModule === $mod['id'] ? 'active' : '' ?>" href="<?= e(url_path(ltrim($mod['href'], '/'))) ?>">
+              <?= e($mod['label']) ?>
+            </a>
+          <?php endforeach; ?>
+        <?php endif; ?>
 
         <a href="<?= e(url_path('logout.php')) ?>" class="nav-logout">Sair</a>
       </nav>

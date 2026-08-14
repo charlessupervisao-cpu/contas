@@ -90,12 +90,14 @@ CRITICAL=(
   .env.example
   lib/Schema.php
   lib/Reports.php
+  lib/ContaJeExport.php
   lib/ElectoralRules.php
   lib/Constants.php
   lib/Database.php
   lib/Auth.php
   admin/index.php
   admin/relatorios.php
+  admin/entrega.php
   admin/base-legal.php
   admin/inconsistencias.php
   admin/representantes.php

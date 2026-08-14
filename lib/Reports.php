@@ -356,11 +356,14 @@ final class Reports
             $rows[] = [
                 'Campo' => 'Conta · ' . (string) ($a['label'] ?? ''),
                 'Valor' => sprintf(
-                    '%s · Ag %s · Cc %s · Fonte %s · Saldo %s',
+                    '%s · Ag %s%s · Cc %s%s · Fonte %s · RAC %s · Saldo %s',
                     (string) ($a['bankName'] ?? ''),
                     (string) ($a['agency'] ?? ''),
+                    !empty($a['agencyDv']) ? '-' . $a['agencyDv'] : '',
                     (string) ($a['accountNumber'] ?? ''),
+                    !empty($a['accountDv']) ? '-' . $a['accountDv'] : '',
                     $origin,
+                    (string) ($a['racNumber'] ?? '—'),
                     money_br((float) ($a['balance'] ?? 0))
                 ),
             ];
@@ -572,12 +575,21 @@ final class Reports
         $total = 0.0;
         foreach ($items as $e) {
             $total += (float) $e['amount'];
+            $payMethod = (string) ($e['paymentMethod'] ?? '');
+            $payOrigin = (string) ($e['paymentResourceOrigin'] ?? '');
             $rows[] = [
                 'Data' => date_br(substr((string) $e['date'], 0, 10)),
                 'Categoria' => Categories::label((string) ($e['category'] ?? '')),
                 'Fornecedor' => (string) ($e['supplierName'] ?? ''),
                 'Documento' => (string) ($e['supplierDoc'] ?? ''),
                 'NF' => (string) ($e['numeroNf'] ?? ''),
+                'Qtd' => isset($e['quantity']) && $e['quantity'] !== null && $e['quantity'] !== ''
+                    ? (string) $e['quantity'] : '',
+                'Vl_Unit' => isset($e['unitValue']) && $e['unitValue'] !== null && $e['unitValue'] !== ''
+                    ? money_br((float) $e['unitValue']) : '',
+                'Forma_Pagamento' => PAYMENT_METHODS[$payMethod] ?? ($payMethod !== '' ? $payMethod : '—'),
+                'Data_Pagamento' => !empty($e['paymentDate']) ? date_br(substr((string) $e['paymentDate'], 0, 10)) : '',
+                'Fonte_Pagamento' => BANK_RESOURCE_ORIGINS[$payOrigin] ?? ($payOrigin !== '' ? $payOrigin : '—'),
                 'Status' => (string) ($e['status'] ?? ''),
                 'Conta' => (string) ($e['accountLabel'] ?? ''),
                 'Descrição' => (string) ($e['description'] ?? ''),
@@ -586,7 +598,10 @@ final class Reports
         }
         return [
             'meta' => $meta,
-            'columns' => ['Data', 'Categoria', 'Fornecedor', 'Documento', 'NF', 'Status', 'Conta', 'Descrição', 'Valor'],
+            'columns' => [
+                'Data', 'Categoria', 'Fornecedor', 'Documento', 'NF', 'Qtd', 'Vl_Unit',
+                'Forma_Pagamento', 'Data_Pagamento', 'Fonte_Pagamento', 'Status', 'Conta', 'Descrição', 'Valor',
+            ],
             'rows' => $rows,
             'summary' => ['Quantidade' => (string) count($rows), 'Total' => money_br($total)],
         ];

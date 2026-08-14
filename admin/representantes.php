@@ -138,16 +138,25 @@ if ($campaign) {
 }
 require dirname(__DIR__) . '/templates/admin_layout_start.php';
 ?>
-<div class="row-actions" style="margin-bottom:1rem">
-  <a class="btn btn-ghost" href="<?= e(url_path('admin/index.php')) ?>">← Voltar</a>
-  <?php if ($canWrite): ?>
-    <a class="btn btn-primary" href="#form-rep"><?= $edit ? 'Editar formulário' : 'Novo representante' ?></a>
-  <?php endif; ?>
+<div class="page-toolbar filter-panel">
+  <div class="page-toolbar-main">
+    <a class="btn btn-ghost" href="<?= e(url_path('admin/index.php')) ?>">← Painel</a>
+    <div>
+      <div class="fin-kicker" style="margin:0">Conta+JE §7.3 · Representação legal</div>
+      <strong style="font-size:1.05rem">Representantes da prestação</strong>
+    </div>
+  </div>
+  <div class="page-toolbar-side">
+    <?php if ($canWrite): ?>
+      <a class="btn btn-primary" href="#form-rep"><?= $edit ? 'Editar formulário' : 'Novo representante' ?></a>
+    <?php endif; ?>
+    <a class="btn btn-ghost" href="<?= e(url_path('admin/entrega.php')) ?>">Entrega TSE</a>
+  </div>
 </div>
 
-<p class="muted" style="margin:0 0 1rem;line-height:1.45;max-width:48rem">
-  Conta+JE §7.3 — representação legal: cadastre advogado(a), contabilista e demais responsáveis pela prestação de contas junto à Justiça Eleitoral.
-</p>
+<div class="je-banner">
+  Cadastre advogado(a) com OAB, contabilista com CRC e demais responsáveis — os mesmos papéis do Conta+JE.
+</div>
 
 <div class="grid grid-2">
   <div class="stack">
@@ -192,8 +201,9 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
   </div>
 
   <?php if ($canWrite): ?>
-  <div class="panel form-card" id="form-rep">
-    <h3 class="display" style="margin-top:0"><?= $edit ? 'Editar representante' : 'Novo representante' ?></h3>
+  <div class="panel form-card je-section" id="form-rep">
+    <div class="je-kicker">Cadastro Conta+JE</div>
+    <h3 class="display" style="margin-top:.15rem"><?= $edit ? 'Editar representante' : 'Novo representante' ?></h3>
     <?php if ($errors): ?>
       <div class="alert alert-danger"><?php foreach ($errors as $err): ?><div><?= e($err) ?></div><?php endforeach; ?></div>
     <?php endif; ?>

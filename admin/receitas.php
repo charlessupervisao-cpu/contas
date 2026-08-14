@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/bootstrap.php';
 
 $user = Auth::requireLogin('receitas');
 $activeModule = 'receitas';
-$pageTitle = 'Receitas';
+$pageTitle = 'Doações recebidas';
 $pdo = Database::pdo();
 $canWrite = can_launch($user['role']);
 $editId = trim((string) get('id', ''));
@@ -70,18 +70,23 @@ foreach ($rows as $r) {
 }
 require dirname(__DIR__) . '/templates/admin_layout_start.php';
 ?>
-<div class="row-actions" style="margin-bottom:1rem;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
-  <div class="row-actions">
-    <a class="btn btn-ghost" href="<?= e(url_path('admin/index.php')) ?>">← Voltar</a>
-    <div class="muted">
-      Total: <strong><?= e(money_br($total)) ?></strong> ·
-      <?= count($rows) ?> registros ·
-      <?= count($donors) ?> doadores PF
+<div class="page-toolbar filter-panel">
+  <div class="page-toolbar-main">
+    <a class="btn btn-ghost" href="<?= e(url_path('admin/index.php')) ?>">← Painel</a>
+    <div>
+      <div class="fin-kicker" style="margin:0">Conta+JE §8 · Doações recebidas</div>
+      <strong style="font-size:1.05rem">Receitas da campanha</strong>
     </div>
   </div>
-  <?php if ($canWrite): ?>
-    <a class="btn btn-primary" href="<?= e(url_path('admin/lancamento.php?tipo=RECEITA')) ?>">Nova receita</a>
-  <?php endif; ?>
+  <div class="page-toolbar-side">
+    <div class="muted" style="font-size:.85rem">
+      Total <strong><?= e(money_br($total)) ?></strong> · <?= count($rows) ?> · <?= count($donors) ?> doadores PF
+    </div>
+    <?php if ($canWrite): ?>
+      <a class="btn btn-primary" href="<?= e(url_path('admin/lancamento.php?tipo=RECEITA')) ?>">Nova doação</a>
+    <?php endif; ?>
+    <a class="btn btn-ghost" href="<?= e(url_path('admin/relatorios.php?tipo=receitas-financeiras&formato=oficial')) ?>">Relatório</a>
+  </div>
 </div>
 
 <div class="grid grid-3" style="margin-bottom:1rem">
@@ -96,15 +101,17 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
 
 <div class="panel table-wrap m-list-desktop">
 <table class="data">
-  <thead><tr><th>Data</th><th>Fonte</th><th>Doador / Origem</th><th>CPF</th><th>Conta</th><th>Valor</th><th></th></tr></thead>
+  <thead><tr><th>Data</th><th>Fonte Conta+JE</th><th>Doador / Origem</th><th>CPF</th><th>Espécie</th><th>Recibo</th><th>Conta</th><th>Valor</th><th></th></tr></thead>
   <tbody>
-  <?php if (!$rows): ?><tr><td colspan="7" class="empty">Nenhuma receita.</td></tr><?php endif; ?>
+  <?php if (!$rows): ?><tr><td colspan="9" class="empty">Nenhuma receita.</td></tr><?php endif; ?>
   <?php foreach ($rows as $r): ?>
     <tr>
       <td><?= e(date_br($r['date'])) ?></td>
       <td><?= e(REVENUE_SOURCES[$r['source']] ?? $r['source']) ?></td>
       <td><?= e($r['donorName'] ?: '—') ?><div class="muted" style="font-size:.75rem"><?= e($r['description'] ?: '') ?></div></td>
       <td><?= e($r['donorCpf'] ? format_cpf_cnpj($r['donorCpf']) : '—') ?></td>
+      <td><?= e(RESOURCE_SPECIES[$r['resourceSpecies'] ?? ''] ?? ($r['resourceSpecies'] ?? '—')) ?></td>
+      <td><?= e((string) ($r['receiptNumber'] ?? '—')) ?></td>
       <td><?= e($r['accountLabel'] ?: '—') ?></td>
       <td><strong><?= e(money_br($r['amount'])) ?></strong></td>
       <td>
@@ -139,6 +146,8 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
       <?php if (!empty($r['description'])): ?><p class="m-card-desc"><?= e((string) $r['description']) ?></p><?php endif; ?>
       <dl class="m-card-meta">
         <div><dt>CPF</dt><dd><?= e($r['donorCpf'] ? format_cpf_cnpj($r['donorCpf']) : '—') ?></dd></div>
+        <div><dt>Espécie</dt><dd><?= e(RESOURCE_SPECIES[$r['resourceSpecies'] ?? ''] ?? ($r['resourceSpecies'] ?? '—')) ?></dd></div>
+        <div><dt>Recibo</dt><dd><?= e((string) ($r['receiptNumber'] ?? '—')) ?></dd></div>
         <div><dt>Conta</dt><dd><?= e($r['accountLabel'] ?: '—') ?></dd></div>
       </dl>
       <?php if ($canWrite): ?>

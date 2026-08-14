@@ -804,6 +804,32 @@ body.dash-home{overflow-x:hidden}
 }
 .fin-identity-main{display:flex;gap:.9rem;align-items:center;min-width:0}
 .fin-kicker{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.65)}
+
+/* Conta+JE / TSE screen language */
+.je-kicker{
+  font-size:.68rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--accent,#0f766e);margin:0 0 .15rem;
+}
+.je-section{position:relative}
+.je-section-title{
+  font-family:var(--font-display);font-size:.95rem;font-weight:800;letter-spacing:-.01em;
+  margin:.15rem 0 .55rem;padding-bottom:.35rem;border-bottom:1px solid var(--line);
+  color:var(--navy,#0a254a);
+}
+.je-banner{
+  display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap;
+  margin:0 0 1rem;padding:.85rem 1rem;border-radius:var(--radius-sm,.75rem);
+  background:
+    linear-gradient(135deg, rgba(15,118,110,.08) 0%, rgba(10,37,74,.06) 100%);
+  border:1px solid rgba(15,118,110,.22);
+}
+.je-banner strong{color:var(--navy,#0a254a)}
+.je-req::after,.label.req::after{content:" *";color:var(--danger,#be123c);font-weight:800}
+.sidebar .nav-sep-label{
+  display:block;margin:.55rem .35rem .2rem;padding:0 .15rem;
+  font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:rgba(232,238,246,.45);
+}
 .fin-title{font-family:var(--font-display);font-size:clamp(1.25rem,2.6vw,1.75rem);margin:.15rem 0;letter-spacing:-.02em;color:#fff}
 .fin-title span{
   font-family:var(--font-body);font-size:.55em;font-weight:800;color:#5eead4;margin-left:.35rem;

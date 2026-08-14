@@ -408,6 +408,26 @@ final class Lancamento
         $unidadeArrecadadora = trim((string) ($input['unidadeArrecadadora'] ?? ''));
         $dsUe = trim((string) ($input['dsUe'] ?? ''));
         $nfeLink = trim((string) ($input['nfeLink'] ?? ''));
+        $paymentMethod = strtoupper(trim((string) ($input['paymentMethod'] ?? '')));
+        if ($paymentMethod !== '' && !isset(PAYMENT_METHODS[$paymentMethod])) {
+            $paymentMethod = '';
+        }
+        $paymentDateRaw = trim((string) ($input['paymentDate'] ?? ''));
+        $paymentDate = null;
+        if ($paymentDateRaw !== '') {
+            $paymentDate = preg_match('/^\d{4}-\d{2}-\d{2}/', $paymentDateRaw)
+                ? substr($paymentDateRaw, 0, 10)
+                : substr(parse_date_input($paymentDateRaw), 0, 10);
+        }
+        $paymentOrigin = trim((string) ($input['paymentResourceOrigin'] ?? ''));
+        if ($paymentOrigin !== '' && !isset(BANK_RESOURCE_ORIGINS[$paymentOrigin])) {
+            $paymentOrigin = (string) ($account['resourceOrigin'] ?? '');
+        }
+        if ($paymentOrigin === '') {
+            $paymentOrigin = (string) ($account['resourceOrigin'] ?? '');
+        }
+        $quantity = isset($input['quantity']) && $input['quantity'] !== '' ? (float) parse_money_input((string) $input['quantity']) : null;
+        $unitValue = isset($input['unitValue']) && $input['unitValue'] !== '' ? (float) parse_money_input((string) $input['unitValue']) : null;
 
         $dataEmissao = null;
         if ($dataEmissaoRaw !== '') {
@@ -498,29 +518,61 @@ final class Lancamento
                     $status = 'PAGA';
                 }
 
-                $pdo->prepare(
-                    'INSERT INTO `Expense` (
-                        id, campaignId, category, supplierName, supplierDoc, supplierId, description, amount, date, status,
-                        naturezaOp, dataEmissao, numeroNf,
-                        unidadeArrecadadora, dsUe, nfeLink, importSource, bankAccountId, caboId, vehicleId,
-                        installmentGroupId, installmentNumber, installmentCount,
-                        createdById, createdAt, updatedAt
-                     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
-                )->execute([
-                    $expenseId, $campaign['id'], $category, $supplierName, $supplierDoc ?: null, $supplierId ?: null,
-                    $partDesc, $partAmount, $partDate, $status,
-                    $naturezaOp !== '' ? $naturezaOp : null,
-                    $dataEmissao,
-                    $numeroNf !== '' ? $numeroNf : null,
-                    $unidadeArrecadadora !== '' ? $unidadeArrecadadora : null,
-                    $dsUe !== '' ? $dsUe : null,
-                    $nfeLink !== '' ? $nfeLink : null,
-                    null,
-                    $account['id'],
-                    $input['caboId'] ?? null, $input['vehicleId'] ?? null,
-                    $groupId, $installments > 1 ? $n : null, $installments > 1 ? $installments : null,
-                    $userId, $now, $now,
-                ]);
+                try {
+                    $pdo->prepare(
+                        'INSERT INTO `Expense` (
+                            id, campaignId, category, supplierName, supplierDoc, supplierId, description, amount, date, status,
+                            naturezaOp, dataEmissao, numeroNf,
+                            unidadeArrecadadora, dsUe, nfeLink, importSource, bankAccountId, caboId, vehicleId,
+                            installmentGroupId, installmentNumber, installmentCount,
+                            paymentMethod, paymentDate, paymentResourceOrigin, quantity, unitValue,
+                            createdById, createdAt, updatedAt
+                         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                    )->execute([
+                        $expenseId, $campaign['id'], $category, $supplierName, $supplierDoc ?: null, $supplierId ?: null,
+                        $partDesc, $partAmount, $partDate, $status,
+                        $naturezaOp !== '' ? $naturezaOp : null,
+                        $dataEmissao,
+                        $numeroNf !== '' ? $numeroNf : null,
+                        $unidadeArrecadadora !== '' ? $unidadeArrecadadora : null,
+                        $dsUe !== '' ? $dsUe : null,
+                        $nfeLink !== '' ? $nfeLink : null,
+                        null,
+                        $account['id'],
+                        $input['caboId'] ?? null, $input['vehicleId'] ?? null,
+                        $groupId, $installments > 1 ? $n : null, $installments > 1 ? $installments : null,
+                        $paymentMethod !== '' ? $paymentMethod : null,
+                        $paymentDate,
+                        $paymentOrigin !== '' ? $paymentOrigin : null,
+                        $quantity,
+                        $unitValue,
+                        $userId, $now, $now,
+                    ]);
+                } catch (Throwable) {
+                    $pdo->prepare(
+                        'INSERT INTO `Expense` (
+                            id, campaignId, category, supplierName, supplierDoc, supplierId, description, amount, date, status,
+                            naturezaOp, dataEmissao, numeroNf,
+                            unidadeArrecadadora, dsUe, nfeLink, importSource, bankAccountId, caboId, vehicleId,
+                            installmentGroupId, installmentNumber, installmentCount,
+                            createdById, createdAt, updatedAt
+                         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                    )->execute([
+                        $expenseId, $campaign['id'], $category, $supplierName, $supplierDoc ?: null, $supplierId ?: null,
+                        $partDesc, $partAmount, $partDate, $status,
+                        $naturezaOp !== '' ? $naturezaOp : null,
+                        $dataEmissao,
+                        $numeroNf !== '' ? $numeroNf : null,
+                        $unidadeArrecadadora !== '' ? $unidadeArrecadadora : null,
+                        $dsUe !== '' ? $dsUe : null,
+                        $nfeLink !== '' ? $nfeLink : null,
+                        null,
+                        $account['id'],
+                        $input['caboId'] ?? null, $input['vehicleId'] ?? null,
+                        $groupId, $installments > 1 ? $n : null, $installments > 1 ? $installments : null,
+                        $userId, $now, $now,
+                    ]);
+                }
 
                 $txId = cuid();
                 $docRef = $numeroNf !== '' ? ('NF ' . $numeroNf) : null;

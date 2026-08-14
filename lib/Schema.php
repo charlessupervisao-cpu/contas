@@ -264,6 +264,15 @@ final class Schema
             if (!self::columnExists($pdo, 'BankAccount', 'openedAt')) {
                 $pdo->exec('ALTER TABLE `BankAccount` ADD COLUMN `openedAt` DATE NULL AFTER `resourceOrigin`');
             }
+            foreach ([
+                'agencyDv' => "VARCHAR(8) NULL AFTER `agency`",
+                'accountDv' => "VARCHAR(8) NULL AFTER `accountNumber`",
+                'racNumber' => "VARCHAR(64) NULL AFTER `openedAt`",
+            ] as $col => $def) {
+                if (!self::columnExists($pdo, 'BankAccount', $col)) {
+                    $pdo->exec("ALTER TABLE `BankAccount` ADD COLUMN `{$col}` {$def}");
+                }
+            }
             // Heurística: rotula contas existentes
             try {
                 $pdo->exec("UPDATE `BankAccount` SET resourceOrigin='FUNDO_PARTIDARIO' WHERE (resourceOrigin IS NULL OR resourceOrigin='') AND (LOWER(label) LIKE '%fundo%')");
@@ -286,6 +295,21 @@ final class Schema
             foreach ($revCols as $name => $def) {
                 if (!self::columnExists($pdo, 'Revenue', $name)) {
                     $pdo->exec("ALTER TABLE `Revenue` ADD COLUMN `{$name}` {$def}");
+                }
+            }
+        }
+
+        if (self::tableExists($pdo, 'Expense')) {
+            $expCols = [
+                'paymentMethod' => 'VARCHAR(64) NULL',
+                'paymentDate' => 'DATE NULL',
+                'paymentResourceOrigin' => 'VARCHAR(64) NULL',
+                'quantity' => 'DOUBLE NULL',
+                'unitValue' => 'DOUBLE NULL',
+            ];
+            foreach ($expCols as $name => $def) {
+                if (!self::columnExists($pdo, 'Expense', $name)) {
+                    $pdo->exec("ALTER TABLE `Expense` ADD COLUMN `{$name}` {$def}");
                 }
             }
         }
