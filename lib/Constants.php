@@ -4,7 +4,7 @@ declare(strict_types=1);
 const APP_NAME = 'CONTAS';
 const APP_TAGLINE = 'Prestação de contas para políticos';
 /** Build publicada no deploy — use para confirmar se o cPanel está atualizado */
-const APP_BUILD = '2026.08.14-trego';
+const APP_BUILD = '2026.08.14-relatorios';
 const ELECTION_YEAR = 2026;
 /** Fim da janela do demonstrativo / 1º turno (GO 2026) */
 const CAMPAIGN_END_DATE = '2026-10-04';
@@ -213,6 +213,7 @@ const MODULES = [
     ['id' => 'contas-pendentes', 'label' => 'Contas pendentes', 'href' => '/admin/contas-pendentes.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary'],
     ['id' => 'lancamento', 'label' => 'Novo lançamento', 'href' => '/admin/lancamento.php', 'roles' => ['MASTER'], 'group' => 'primary', 'shortcut' => 'L'],
     ['id' => 'inconsistencias', 'label' => 'Verificar inconsistências', 'href' => '/admin/inconsistencias.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary'],
+    ['id' => 'relatorios', 'label' => 'Relatórios Conta+JE', 'href' => '/admin/relatorios.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'primary'],
     ['id' => 'base-legal', 'label' => 'Base legal TRE-GO 2026', 'href' => '/admin/base-legal.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'primary'],
     // Bloco operacional
     ['id' => 'conciliacao', 'label' => 'Conciliação', 'href' => '/admin/conciliacao.php', 'roles' => ['MASTER', 'FINANCEIRO'], 'group' => 'ops'],
@@ -239,6 +240,7 @@ const VIEW_ROLES = [
     'despesas' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
     'contas-pendentes' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
     'inconsistencias' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
+    'relatorios' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'],
     'base-legal' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'],
     'cabos' => ['MASTER', 'RH', 'CONSULTA'],
     'equipes' => ['MASTER', 'RH', 'CONSULTA'],

@@ -100,6 +100,7 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
     <div class="row-actions">
       <a class="btn btn-primary" href="<?= e(url_path('admin/contas.php')) ?>">Configurar contas</a>
       <a class="btn btn-secondary" href="<?= e(ElectoralRules::RAC_URL) ?>" target="_blank" rel="noopener">Emitir RAC</a>
+      <a class="btn btn-ghost" href="<?= e(url_path('admin/relatorios.php')) ?>">Relatórios</a>
       <a class="btn btn-ghost" href="<?= e(url_path('admin/inconsistencias.php')) ?>">Ver inconsistências</a>
     </div>
   </div>

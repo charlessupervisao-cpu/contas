@@ -174,6 +174,7 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
       </div>
       <div class="row-actions" style="gap:.4rem;flex-wrap:wrap">
         <a class="btn btn-primary" href="<?= e(url_path('admin/base-legal.php')) ?>">Base legal TRE-GO</a>
+        <a class="btn btn-secondary" href="<?= e(url_path('admin/relatorios.php')) ?>">Relatórios</a>
         <a class="btn btn-secondary" href="<?= e(url_path('admin/inconsistencias.php')) ?>">Inconsistências</a>
         <a class="btn btn-ghost" href="<?= e(url_path('admin/representantes.php')) ?>">Representantes</a>
       </div>

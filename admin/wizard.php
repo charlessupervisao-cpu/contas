@@ -161,6 +161,7 @@ $steps = [
     ['veiculos', 'Veículos', '/admin/veiculos.php', false],
     ['cabos', 'Cabos', '/admin/cabos.php', false],
     ['receitas', 'Receitas / Despesas', '/admin/lancamento.php', true],
+    ['relatorios', 'Relatórios Conta+JE / TRE-GO', '/admin/relatorios.php', true],
     ['inconsistencias', 'Verificar inconsistências', '/admin/inconsistencias.php', true],
 ];
 $photoUrl = !empty($campaign['photoUrl']) ? url_path(ltrim((string) $campaign['photoUrl'], '/')) : '';

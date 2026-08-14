@@ -1676,6 +1676,14 @@ html{-webkit-tap-highlight-color:transparent}
   background:#f8fafc;border:1px solid var(--line);
 }
 @media print{
-  .sidebar,.mobile-tabbar,.page-toolbar,.flash,.pwa-install{display:none!important}
-  .main,.content{padding:0!important}
+  .sidebar,.mobile-tabbar,.page-toolbar,.flash,.pwa-install,.report-toolbar,.nav-logout{display:none!important}
+  .main,.content,.admin-main{padding:0!important;margin:0!important}
+  .admin-shell{display:block!important}
+  .report-sheet{border:none!important;box-shadow:none!important;padding:0!important}
+  .report-table{font-size:11px}
+  .report-table th,.report-table td{padding:.35rem .4rem}
+  a[href]::after{content:""!important}
 }
+.report-head{margin-bottom:.75rem;padding-bottom:.75rem;border-bottom:1px solid var(--line)}
+.report-table{width:100%;font-size:.86rem}
+.table-wrap{overflow-x:auto}

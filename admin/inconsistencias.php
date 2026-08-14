@@ -29,6 +29,7 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
     <span class="badge badge-danger"><?= count($impeditivas) ?> impeditiva(s)</span>
     <span class="badge badge-warn"><?= count($naoImpeditivas) ?> não impeditiva(s)</span>
     <a class="btn btn-ghost" href="<?= e(url_path('admin/base-legal.php')) ?>">Base TRE-GO</a>
+    <a class="btn btn-ghost" href="<?= e(url_path('admin/relatorios.php')) ?>">Relatórios</a>
     <a class="btn btn-ghost" href="<?= e(ElectoralRules::TRE_GO_HUB_URL) ?>" target="_blank" rel="noopener">Portal TRE-GO</a>
     <a class="btn btn-ghost" href="<?= e(ElectoralRules::MANUAL_URL) ?>" target="_blank" rel="noopener">Manual Conta+JE (PDF)</a>
   </div>

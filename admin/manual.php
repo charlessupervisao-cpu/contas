@@ -461,10 +461,12 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
       <li>Vínculos categoria/fonte → conta</li>
       <li>Fornecedores para despesas com documento fiscal</li>
       <li>Receitas com tipo, espécie e recibo eleitoral quando couber</li>
+      <li>Gerar relatórios Conta+JE (demonstrativo, despesas, recibos, RF 72h)</li>
       <li>Verificar inconsistências (impeditivas zeradas)</li>
     </ol>
     <div class="row-actions" style="margin-top:1rem">
       <a class="btn btn-primary" href="<?= e(url_path('admin/wizard.php')) ?>">Ir para Campanha / foto</a>
+      <a class="btn btn-secondary" href="<?= e(url_path('admin/relatorios.php')) ?>">Relatórios</a>
       <a class="btn btn-secondary" href="<?= e(url_path('admin/inconsistencias.php')) ?>">Ver inconsistências</a>
       <a class="btn btn-ghost" href="<?= e(ElectoralRules::MANUAL_URL) ?>" target="_blank" rel="noopener">Manual Conta+JE (PDF)</a>
       <a class="btn btn-ghost" href="<?= e(url_path('admin/base-legal.php')) ?>">Base TRE-GO 2026</a>

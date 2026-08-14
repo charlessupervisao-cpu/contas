@@ -13,6 +13,7 @@ Alinhado ao Manual Conta+JE e à legislação eleitoral, com base estadual do TR
 - Hub TRE-GO: [Prestação de Contas Eleições 2026](https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/prestacao-de-contas-eleicoes-2026)
 - Catálogo embutido: `data/tre-go-2026.json` (prazos, limites GO, GRU/PagTesouro e 30+ links oficiais do hub e subpáginas)
 - Tela no sistema: **Base legal TRE-GO 2026**
+- Relatórios Conta+JE §11 (diversos, receitas, despesas, recibos) + RF 72h / parcial / final TRE-GO
 - Lei nº 9.504/1997 · Res.-TSE 23.607/2019 · Res.-TSE 23.610/2019
 - Manual Conta+JE (PDF)
 
@@ -26,6 +27,7 @@ Recursos implementados:
 - Tipos de receita Conta+JE + espécies + recibo eleitoral
 - Representantes legais (advogado OAB / contabilista CRC)
 - Verificação de inconsistências (impeditivas / não impeditivas)
+- Relatórios imprimíveis / CSV para conferência antes da entrega
 - Qualificação com endereço e contatos
 
 ## Deploy limpo (cPanel)
