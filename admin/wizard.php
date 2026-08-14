@@ -231,7 +231,12 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
       </div>
       <div class="grid grid-2">
         <div class="field"><label class="label">Orçamento</label><input class="input" name="totalBudget" data-mask="money" inputmode="decimal" value="<?= e(number_format((float)($campaign['totalBudget'] ?? 0), 2, ',', '.')) ?>" required></div>
-        <div class="field"><label class="label">Limite legal</label><input class="input" name="legalSpendLimit" data-mask="money" inputmode="decimal" value="<?= e(number_format((float)($campaign['legalSpendLimit'] ?? 0), 2, ',', '.')) ?>" required></div>
+        <div class="field"><label class="label">Limite legal</label><input class="input" name="legalSpendLimit" data-mask="money" inputmode="decimal" value="<?= e(number_format((float)($campaign['legalSpendLimit'] ?? DEFAULT_LEGAL_SPEND_LIMIT), 2, ',', '.')) ?>" required>
+          <?php $teto = ElectoralRules::spendLimitForOffice((string) ($campaign['office'] ?? DEFAULT_OFFICE)); ?>
+          <?php if ($teto !== null): ?>
+            <div class="muted" style="font-size:.78rem;margin-top:.25rem">Teto TRE-GO 2026 para o cargo: <strong><?= e(money_br($teto)) ?></strong></div>
+          <?php endif; ?>
+        </div>
       </div>
       <div class="field"><label class="label">Site de campanha (interno)</label><input class="input" name="website" value="<?= e($campaign['website'] ?? '') ?>" placeholder="opcional"></div>
       <div class="field"><label class="label">Situação</label><input class="input" name="situation" value="<?= e($campaign['situation'] ?? '') ?>"></div>

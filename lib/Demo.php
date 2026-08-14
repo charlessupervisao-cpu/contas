@@ -113,7 +113,7 @@ final class Demo
                 $id, 2026, 'Virmondes Cruvinel', 'Virmondes Borges Cruvinel Filho', '44321',
                 'UNIÃO', '44', '47552932000100', 'Deputado Estadual', 'GO', 'CENTROOESTE',
                 'Virmondes Cruvinel', 'Em campanha — Prestação de contas 2026', 1,
-                1400000, 1200000, '10/03/1980', 'Masculino', 'Superior Completo',
+                1270629.01, 1200000, '10/03/1980', 'Masculino', 'Superior Completo',
                 'Advogado / Deputado Estadual', 'Brasileira Nata / GO-Goiânia',
                 'https://virmondes.com.br', $now, $now,
             ]);
@@ -267,7 +267,7 @@ final class Demo
             'UPDATE `Campaign` SET electionYear=?, candidateName=?, candidateFullName=?, candidateNumber=?, party=?, partyNumber=?, totalBudget=?, legalSpendLimit=?, situation=?, website=?, reelection=?, updatedAt=? WHERE id=?'
         )->execute([
             2026, 'Virmondes Cruvinel', 'Virmondes Borges Cruvinel Filho', '44321',
-            'UNIÃO', '44', 1200000, 1400000, 'Em campanha — Prestação de contas 2026',
+            'UNIÃO', '44', 1200000, 1270629.01, 'Em campanha — Prestação de contas 2026',
             'https://virmondes.com.br', 1, $now, $campaign['id'],
         ]);
 

@@ -12,12 +12,97 @@ final class ElectoralRules
     public const LEGAL_BASIS = [
         'Lei nº 9.504/1997 — Art. 17 a 32 (arrecadação, gastos e prestação de contas)',
         'Resolução-TSE nº 23.607/2019 — arrecadação, aplicação de recursos e prestação de contas',
+        'Resolução-TSE nº 23.610/2019 — propaganda eleitoral (carreatas / atos de campanha)',
         'Manual Conta+JE (TSE/STI) — registro, validação e entrega da prestação',
+        'TRE-GO / CECEP — Prestação de Contas Eleições 2026 (orientações estaduais)',
     ];
 
     public const MANUAL_URL = 'https://contas.synetiq.com.br/sistematse.pdf';
+    public const TRE_GO_HUB_URL = 'https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/prestacao-de-contas-eleicoes-2026';
+    public const CONTA_JE_URL = 'https://contamaisje.tse.jus.br/';
+    public const RAC_URL = 'https://rac.tse.jus.br/rac/';
 
-    /** Contas bancárias de campanha — fontes oficiais Conta+JE §7.5 */
+    /** @var array<string,mixed>|null */
+    private static ?array $treGo = null;
+
+    /** Carrega data/tre-go-2026.json (base oficial TRE-GO + sublinks). */
+    public static function treGoCatalog(): array
+    {
+        if (self::$treGo !== null) {
+            return self::$treGo;
+        }
+        $path = dirname(__DIR__) . '/data/tre-go-2026.json';
+        if (!is_file($path)) {
+            self::$treGo = [];
+            return self::$treGo;
+        }
+        $raw = file_get_contents($path);
+        $data = is_string($raw) ? json_decode($raw, true) : null;
+        self::$treGo = is_array($data) ? $data : [];
+        return self::$treGo;
+    }
+
+    public static function spendLimitForOffice(string $office): ?float
+    {
+        $map = self::treGoCatalog()['spendLimitsGoBrl'] ?? [];
+        $key = self::officeKey($office);
+        if ($key === 'GOVERNADOR') {
+            // Teto do 1º turno (acréscimo de 2º turno é separado)
+            if (isset($map['GOVERNADOR_1T'])) {
+                return (float) $map['GOVERNADOR_1T'];
+            }
+            if (isset($map['GOVERNADOR'])) {
+                return (float) $map['GOVERNADOR'];
+            }
+            return null;
+        }
+        return isset($map[$key]) ? (float) $map[$key] : null;
+    }
+
+    public static function personnelLimitForOffice(string $office): ?int
+    {
+        $map = self::treGoCatalog()['personnelLimitsGo'] ?? [];
+        $key = self::officeKey($office);
+        return isset($map[$key]) ? (int) $map[$key] : null;
+    }
+
+    public static function officeKey(string $office): string
+    {
+        $o = mb_strtoupper(trim($office));
+        if (str_contains($o, 'GOVERNADOR')) {
+            return 'GOVERNADOR';
+        }
+        if (str_contains($o, 'SENADOR')) {
+            return 'SENADOR';
+        }
+        if (str_contains($o, 'FEDERAL')) {
+            return 'DEPUTADO_FEDERAL';
+        }
+        if (str_contains($o, 'ESTADUAL') || str_contains($o, 'DEPUTAD')) {
+            return 'DEPUTADO_ESTADUAL';
+        }
+        return 'DEPUTADO_ESTADUAL';
+    }
+
+    /** @return list<array{label:string,url:string}> */
+    public static function officialLinks(): array
+    {
+        $links = self::treGoCatalog()['links'] ?? [];
+        $out = [];
+        foreach ($links as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $label = trim((string) ($row['label'] ?? ''));
+            $url = trim((string) ($row['url'] ?? ''));
+            if ($label !== '' && $url !== '') {
+                $out[] = ['label' => $label, 'url' => $url];
+            }
+        }
+        return $out;
+    }
+
+    /** Contas bancárias de campanha — fontes oficiais Conta+JE §7.5 / TRE-GO */
     public const BANK_ORIGINS = [
         'DOACOES_CAMPANHA' => 'Doações para Campanha',
         'FUNDO_PARTIDARIO' => 'Fundo Partidário',
@@ -227,22 +312,86 @@ final class ElectoralRules
                 'href' => url_path('admin/contas.php'),
             ];
         } else {
-            $origins = $pdo->prepare('SELECT DISTINCT resourceOrigin FROM `BankAccount` WHERE campaignId=? AND active=1 AND resourceOrigin IS NOT NULL AND resourceOrigin<>\'\'');
+            $origins = [];
             try {
-                $origins->execute([$cid]);
-                $have = $origins->fetchAll(PDO::FETCH_COLUMN) ?: [];
-                foreach (['DOACOES_CAMPANHA', 'FUNDO_PARTIDARIO', 'FEFC'] as $need) {
-                    if (!in_array($need, $have, true)) {
-                        $issues[] = [
-                            'code' => 'FONTE_' . $need,
-                            'level' => 'NAO_IMPEDITIVA',
-                            'message' => 'Conta bancária com fonte “' . self::bankOriginLabel($need) . '” ainda não cadastrada.',
-                            'href' => url_path('admin/contas.php'),
-                        ];
-                    }
-                }
+                $stOrig = $pdo->prepare(
+                    "SELECT DISTINCT resourceOrigin FROM `BankAccount`
+                     WHERE campaignId=? AND active=1 AND resourceOrigin IS NOT NULL AND resourceOrigin<>''"
+                );
+                $stOrig->execute([$cid]);
+                $origins = $stOrig->fetchAll(PDO::FETCH_COLUMN) ?: [];
             } catch (Throwable) {
-                // coluna ainda não migrada
+            }
+            // TRE-GO: contas separadas para privados, FEFC e Fundo Partidário
+            foreach (['DOACOES_CAMPANHA', 'FUNDO_PARTIDARIO', 'FEFC'] as $need) {
+                if (!in_array($need, $origins, true)) {
+                    $issues[] = [
+                        'code' => 'FONTE_' . $need,
+                        'level' => 'IMPEDITIVA',
+                        'message' => 'TRE-GO exige conta bancária separada para “' . self::bankOriginLabel($need) . '” (abrir em até 10 dias do CNPJ via RAC).',
+                        'href' => url_path('admin/contas.php'),
+                    ];
+                }
+            }
+        }
+
+        $limit = self::spendLimitForOffice((string) ($campaign['office'] ?? DEFAULT_OFFICE));
+        $campaignLimit = (float) ($campaign['legalSpendLimit'] ?? 0);
+        if ($limit !== null && $campaignLimit > 0 && abs($campaignLimit - $limit) > 0.009) {
+            $issues[] = [
+                'code' => 'LIMITE_GASTO',
+                'level' => 'NAO_IMPEDITIVA',
+                'message' => 'Limite legal da campanha (' . money_br($campaignLimit) . ') difere do teto TRE-GO 2026 para o cargo (' . money_br($limit) . ').',
+                'href' => url_path('admin/wizard.php'),
+            ];
+        } elseif ($limit !== null && $campaignLimit <= 0) {
+            $issues[] = [
+                'code' => 'LIMITE_GASTO_VAZIO',
+                'level' => 'IMPEDITIVA',
+                'message' => 'Informe o limite legal de gastos (TRE-GO 2026: ' . money_br($limit) . ' para o cargo).',
+                'href' => url_path('admin/wizard.php'),
+            ];
+        }
+
+        $personnelLimit = self::personnelLimitForOffice((string) ($campaign['office'] ?? DEFAULT_OFFICE));
+        if ($personnelLimit !== null && self::tableExists($pdo, 'CaboEleitoral')) {
+            $cab = $pdo->prepare('SELECT COUNT(*) AS c FROM `CaboEleitoral` WHERE campaignId=?');
+            $cab->execute([$cid]);
+            $cabCount = (int) $cab->fetch()['c'];
+            if ($cabCount > $personnelLimit) {
+                $issues[] = [
+                    'code' => 'LIMITE_PESSOAL',
+                    'level' => 'IMPEDITIVA',
+                    'message' => "Contratação de militância/rua acima do teto TRE-GO ({$cabCount}/{$personnelLimit}).",
+                    'href' => url_path('admin/cabos.php'),
+                ];
+            }
+        }
+
+        $deadlines = self::treGoCatalog()['deadlines'] ?? [];
+        $today = date('Y-m-d');
+        if (!empty($deadlines['partialAccounts']['start']) && !empty($deadlines['partialAccounts']['end'])) {
+            $ps = (string) $deadlines['partialAccounts']['start'];
+            $pe = (string) $deadlines['partialAccounts']['end'];
+            if ($today >= $ps && $today <= $pe) {
+                $issues[] = [
+                    'code' => 'PRAZO_PARCIAL',
+                    'level' => 'NAO_IMPEDITIVA',
+                    'message' => "Janela da prestação PARCIAL TRE-GO: {$ps} a {$pe}. Entregue no Conta+JE.",
+                    'href' => self::CONTA_JE_URL,
+                ];
+            }
+        }
+        if (!empty($deadlines['finalAccounts']['start']) && !empty($deadlines['finalAccounts']['end'])) {
+            $fs = (string) $deadlines['finalAccounts']['start'];
+            $fe = (string) $deadlines['finalAccounts']['end'];
+            if ($today >= $fs && $today <= $fe) {
+                $issues[] = [
+                    'code' => 'PRAZO_FINAL',
+                    'level' => 'NAO_IMPEDITIVA',
+                    'message' => "Janela da prestação FINAL TRE-GO: {$fs} a {$fe} (2º turno: 2026-10-26 a 2026-11-14).",
+                    'href' => self::CONTA_JE_URL,
+                ];
             }
         }
 

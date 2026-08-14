@@ -1,0 +1,246 @@
+{
+  "source": {
+    "title": "Prestação de Contas - Eleições 2026 — TRE/GO",
+    "url": "https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/prestacao-de-contas-eleicoes-2026",
+    "organ": "TRE-GO / CECEP (ASEPA)",
+    "fetchedNote": "Base oficial estadual para prestação de contas eleitorais 2026 — hub TRE-GO e sublinks oficiais"
+  },
+  "system": {
+    "name": "CONTA+JE",
+    "url": "https://contamaisje.tse.jus.br/",
+    "manualUrl": "https://www.tse.jus.br/eleicoes/eleicoes-2026-content/prestacao-de-contas/arquivos/manual-contamaisje-2026",
+    "guideUrl": "https://www.tse.jus.br/eleicoes/eleicoes-2026-content/prestacao-de-contas/contaje-sistema-de-prestacao-de-contas",
+    "videoUrl": "https://www.youtube.com/watch?v=nwkW6yt09oU",
+    "racUrl": "https://rac.tse.jus.br/rac/",
+    "racAuthUrl": "https://rac.tse.jus.br/rac/#/autenticacao",
+    "racPageUrl": "https://www.tse.jus.br/eleicoes/eleicoes-2026-content/requerimento-de-abertura-de-conta-bancaria-rac-e-autenticacao",
+    "regulation": "Resolução TSE nº 23.607/2019"
+  },
+  "deadlines": {
+    "bankAccountOpenDaysFromCnpj": 10,
+    "fefcFpDistributionToProtectedCandidatesUntil": "2026-09-08",
+    "financialReportHoursAfterReceipt": 72,
+    "partialAccounts": { "start": "2026-09-09", "end": "2026-09-13" },
+    "finalAccounts": { "start": "2026-10-05", "end": "2026-11-03" },
+    "finalAccountsSecondRound": { "start": "2026-10-26", "end": "2026-11-14" },
+    "fccStart": "2026-05-15",
+    "calendarUrl": "https://www.tse.jus.br/eleicoes/calendario-eleitoral/calendario-eleitoral"
+  },
+  "spendLimitsGoBrl": {
+    "GOVERNADOR": 11562724.00,
+    "GOVERNADOR_1T": 11562724.00,
+    "GOVERNADOR_2T_ACRESCIMO": 5781362.00,
+    "SENADOR": 4447201.54,
+    "DEPUTADO_FEDERAL": 3176572.53,
+    "DEPUTADO_ESTADUAL": 1270629.01
+  },
+  "personnelLimitsGo": {
+    "GOVERNADOR": 2572,
+    "SENADOR": 1286,
+    "DEPUTADO_FEDERAL": 900,
+    "DEPUTADO_ESTADUAL": 450
+  },
+  "bankAccounts": {
+    "requiredOrigins": ["DOACOES_CAMPANHA", "FEFC", "FUNDO_PARTIDARIO"],
+    "rule": "Abrir contas separadas para recursos privados, FEFC e Fundo Partidário. Prazo: 10 dias após CNPJ. Sem custo de manutenção.",
+    "preferredBank": "Banco do Brasil — Conta Eleitoral digital",
+    "preferredBankUrl": "https://www.bb.com.br/site/setor-publico/conta-eleitoral/",
+    "paymentAdvice": "Preferir PIX para pagamentos de campanha",
+    "racEmitUrl": "https://rac.tse.jus.br/rac/#/eleitoral",
+    "racAuthUrl": "https://rac.tse.jus.br/rac/#/autenticacao"
+  },
+  "communications": {
+    "carreataMinHours": 24,
+    "carreataBasis": "art. 13, § 3º da Res. TSE nº 23.610/2019",
+    "fundraisingEventMinBusinessDays": 5,
+    "fundraisingEventBasis": "art. 30, caput e Inciso I da Res. TSE nº 23.607/2019",
+    "stateFederalProtocol": {
+      "phone": "6239204102",
+      "email": "sedoc-lista@tre-go.jus.br",
+      "note": "Cargos estaduais/federais: comunicar eventos de arrecadação ao TRE-GO"
+    },
+    "zonesUrl": "https://apps.tre-go.jus.br/contato-zonas/"
+  },
+  "gru": {
+    "pageUrl": "https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/recolhimento-de-valores-a-uniao",
+    "pagTesouroEmit": "https://pagtesouro.tesouro.gov.br/portal-gru/#/emissao-gru",
+    "pagTesouroPay": "https://pagtesouro.tesouro.gov.br/portal-gru/#/pagamento-gru",
+    "guidePixUrl": "https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/arquivo-1/gru-pix-passo-a-passo",
+    "guideUrl": "https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/arquivo-1/tre-go-gru-passo-a-passo",
+    "note": "GRU modelo SIMPLES via Portal PagTesouro — valores a recolher à União em processos de prestação de contas",
+    "supportPhone": "6239204251"
+  },
+  "support": {
+    "cecepEmail": "cecep@tre-go.jus.br",
+    "asepaEmail": "asepa@tre-go.jus.br",
+    "cecepPage": "https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/asepa",
+    "cecepPhones": ["6239204367", "6239204360"],
+    "address": "Rua T-01 esquina com T-52 (Orestes Ribeiro), nº 1403, Setor Bueno, Goiânia, GO. CEP 74.215-901",
+    "municipalNote": "Partidos municipais: Zona Eleitoral do município"
+  },
+  "sanctions": {
+    "noAccounts": "Contas julgadas não prestadas; sem quitação eleitoral por pelo menos 4 anos (8 se senador), até regularização."
+  },
+  "links": [
+    {
+      "label": "Prestação de Contas Eleições 2026 (TRE-GO)",
+      "url": "https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/prestacao-de-contas-eleicoes-2026",
+      "group": "hub"
+    },
+    {
+      "label": "Hub Prestação de Contas Eleitorais (TRE-GO)",
+      "url": "https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais",
+      "group": "hub"
+    },
+    {
+      "label": "CECEP / ASEPA",
+      "url": "https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/asepa",
+      "group": "hub"
+    },
+    {
+      "label": "Consulta pública de prestações de contas",
+      "url": "https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/prestacao-de-contas-consulta-publica",
+      "group": "hub"
+    },
+    {
+      "label": "Contas eleitorais não prestadas (regularização)",
+      "url": "https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/prestacao-de-contas-eleitorais-1",
+      "group": "hub"
+    },
+    {
+      "label": "CONTA+JE (sistema oficial)",
+      "url": "https://contamaisje.tse.jus.br/",
+      "group": "sistema"
+    },
+    {
+      "label": "Guia Conta+JE (TSE)",
+      "url": "https://www.tse.jus.br/eleicoes/eleicoes-2026-content/prestacao-de-contas/contaje-sistema-de-prestacao-de-contas",
+      "group": "sistema"
+    },
+    {
+      "label": "Manual Conta+JE 2026",
+      "url": "https://www.tse.jus.br/eleicoes/eleicoes-2026-content/prestacao-de-contas/arquivos/manual-contamaisje-2026",
+      "group": "sistema"
+    },
+    {
+      "label": "Vídeo — passo a passo Conta+JE",
+      "url": "https://www.youtube.com/watch?v=nwkW6yt09oU",
+      "group": "sistema"
+    },
+    {
+      "label": "RAC — emitir (candidatos/partidos)",
+      "url": "https://rac.tse.jus.br/rac/#/eleitoral",
+      "group": "bancario"
+    },
+    {
+      "label": "RAC — verificar autenticidade",
+      "url": "https://rac.tse.jus.br/rac/#/autenticacao",
+      "group": "bancario"
+    },
+    {
+      "label": "RAC e autenticação (página TSE)",
+      "url": "https://www.tse.jus.br/eleicoes/eleicoes-2026-content/requerimento-de-abertura-de-conta-bancaria-rac-e-autenticacao",
+      "group": "bancario"
+    },
+    {
+      "label": "Tutorial RAC — candidatos (TRE-MG)",
+      "url": "https://www.youtube.com/watch?v=0nEf4FLZEAk",
+      "group": "bancario"
+    },
+    {
+      "label": "Tutorial RAC — partidos (TRE-MG)",
+      "url": "https://www.youtube.com/watch?v=Lw1L34jr5Fg",
+      "group": "bancario"
+    },
+    {
+      "label": "Conta Eleitoral digital Banco do Brasil",
+      "url": "https://www.bb.com.br/site/setor-publico/conta-eleitoral/",
+      "group": "bancario"
+    },
+    {
+      "label": "Guia BB — correntistas",
+      "url": "https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/arquivo-1/banco-do-brasil-guia-de-abertura-de-contas-eleitorais-para-correntista",
+      "group": "bancario"
+    },
+    {
+      "label": "Guia BB — não correntistas",
+      "url": "https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/arquivo-1/banco-do-brasil-guia-de-abertura-de-contas-eleitorais-para-nao-correntista",
+      "group": "bancario"
+    },
+    {
+      "label": "CNPJ de campanha (TSE)",
+      "url": "https://www.tse.jus.br/eleicoes/eleicoes-2026-content/cnpj-da-campanha",
+      "group": "cadastro"
+    },
+    {
+      "label": "Limites de gastos 2026",
+      "url": "https://www.tse.jus.br/eleicoes/eleicoes-2026-content/prestacao-de-contas/arquivos/anexo-portaria-449-limite-de-gastos-eleicoes-2026",
+      "group": "limites"
+    },
+    {
+      "label": "Limites de contratação de pessoal 2026",
+      "url": "https://www.tse.jus.br/eleicoes/eleicoes-2026-content/prestacao-de-contas/arquivos/limite-contratacoes-2026",
+      "group": "limites"
+    },
+    {
+      "label": "Financiamento coletivo 2026",
+      "url": "https://www.tse.jus.br/eleicoes/eleicoes-2026-content/prestacao-de-contas/financiamento-coletivo-2026",
+      "group": "arrecadacao"
+    },
+    {
+      "label": "Guia visual — doações de recursos públicos",
+      "url": "https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/arquivo-1/guia-visual-doacao-de-recursos-publicos-em-eleicoes-estaduais",
+      "group": "arrecadacao"
+    },
+    {
+      "label": "Recolhimento à União (GRU) — TRE-GO",
+      "url": "https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/recolhimento-de-valores-a-uniao",
+      "group": "gru"
+    },
+    {
+      "label": "PagTesouro — emissão de GRU",
+      "url": "https://pagtesouro.tesouro.gov.br/portal-gru/#/emissao-gru",
+      "group": "gru"
+    },
+    {
+      "label": "PagTesouro — pagamento de GRU (PIX)",
+      "url": "https://pagtesouro.tesouro.gov.br/portal-gru/#/pagamento-gru",
+      "group": "gru"
+    },
+    {
+      "label": "GRU PIX — passo a passo (TRE-GO)",
+      "url": "https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/arquivo-1/gru-pix-passo-a-passo",
+      "group": "gru"
+    },
+    {
+      "label": "GRU — passo a passo (TRE-GO)",
+      "url": "https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/arquivo-1/tre-go-gru-passo-a-passo",
+      "group": "gru"
+    },
+    {
+      "label": "Res.-TSE 23.607/2019",
+      "url": "https://www.tse.jus.br/legislacao/compilada/res/2019/resolucao-no-23-607-de-17-de-dezembro-de-2019",
+      "group": "norma"
+    },
+    {
+      "label": "Calendário eleitoral",
+      "url": "https://www.tse.jus.br/eleicoes/calendario-eleitoral/calendario-eleitoral",
+      "group": "norma"
+    },
+    {
+      "label": "Contatos das Zonas Eleitorais (GO)",
+      "url": "https://apps.tre-go.jus.br/contato-zonas/",
+      "group": "suporte"
+    },
+    {
+      "label": "Contas anuais / partidárias (SPCA)",
+      "url": "https://www.tre-go.jus.br/partidos/contas-partidarias/contas-partidarias",
+      "group": "suporte"
+    },
+    {
+      "label": "Gestores com contas irregulares",
+      "url": "https://www.tre-go.jus.br/eleicoes/gestores-com-contas-irregulares",
+      "group": "suporte"
+    }
+  ]
+}

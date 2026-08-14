@@ -125,6 +125,18 @@ if (request_method() === 'POST' && $canWrite) {
             $errors[] = 'Para enviar o PDF, preencha início, fim e valor mensal do contrato.';
         }
 
+        if ($id === '') {
+            $personnelLimit = ElectoralRules::personnelLimitForOffice((string) ($campaign['office'] ?? DEFAULT_OFFICE));
+            if ($personnelLimit !== null) {
+                $cntSt = $pdo->prepare('SELECT COUNT(*) AS c FROM `CaboEleitoral` WHERE campaignId=?');
+                $cntSt->execute([$cid]);
+                $currentCabos = (int) $cntSt->fetch()['c'];
+                if ($currentCabos >= $personnelLimit) {
+                    $errors[] = "Limite TRE-GO de militância/rua atingido ({$personnelLimit}) para o cargo da campanha.";
+                }
+            }
+        }
+
         if (!$errors && $campaign) {
             try {
                 $pdo->beginTransaction();
@@ -222,6 +234,7 @@ $rows = $pdo->query(
 $ativos = count(array_filter($rows, fn ($r) => (int) $r['active'] === 1));
 $folha = array_sum(array_map(fn ($r) => (float) $r['folha'], $rows));
 $contratos = array_sum(array_map(fn ($r) => (int) $r['contratosAtivos'], $rows));
+$personnelLimit = ElectoralRules::personnelLimitForOffice((string) ($campaign['office'] ?? DEFAULT_OFFICE));
 require dirname(__DIR__) . '/templates/admin_layout_start.php';
 ?>
 <div class="row-actions" style="margin-bottom:1rem;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
@@ -232,11 +245,18 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
 </div>
 
 <div class="grid grid-4" style="margin-bottom:1rem">
-  <div class="stat-chip"><div class="l">Cadastrados</div><div class="n"><?= count($rows) ?></div></div>
+  <div class="stat-chip"><div class="l">Cadastrados</div><div class="n"><?= count($rows) ?><?= $personnelLimit !== null ? ' / ' . (int) $personnelLimit : '' ?></div></div>
   <div class="stat-chip"><div class="l">Ativos</div><div class="n"><?= $ativos ?></div></div>
   <div class="stat-chip"><div class="l">Contratos ativos</div><div class="n"><?= $contratos ?></div></div>
   <div class="stat-chip"><div class="l">Folha mensal</div><div class="n"><?= e(money_br($folha)) ?></div></div>
 </div>
+<?php if ($personnelLimit !== null): ?>
+  <p class="muted" style="margin:-.35rem 0 1rem;font-size:.82rem">
+    Teto TRE-GO 2026 de militância/rua para <?= e((string) ($campaign['office'] ?? DEFAULT_OFFICE)) ?>:
+    <strong><?= (int) $personnelLimit ?></strong> pessoas.
+    <a href="<?= e(url_path('admin/base-legal.php')) ?>">Ver base legal</a>
+  </p>
+<?php endif; ?>
 
 <div class="grid grid-2" style="margin-bottom:1rem">
 <?php foreach ($rows as $c): ?>

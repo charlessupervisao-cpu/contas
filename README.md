@@ -6,23 +6,25 @@ Desenvolvido por [Synetiq](https://synetiq.com.br) — Soluções Digitais Intel
 
 Sistema **interno** (sem portal público). Quem não é Master entra só para **consultar**, sem alterar dados.
 
-## Conformidade Conta+JE / TSE 2026
+## Conformidade Conta+JE / TRE-GO / TSE 2026
 
-Alinhado ao Manual Conta+JE e à legislação eleitoral:
+Alinhado ao Manual Conta+JE e à legislação eleitoral, com base estadual do TRE-GO:
 
-- Lei nº 9.504/1997
-- Resolução-TSE nº 23.607/2019
-- Manual Conta+JE (PDF de referência em `https://contas.synetiq.com.br/sistematse.pdf`)
+- Hub TRE-GO: [Prestação de Contas Eleições 2026](https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/prestacao-de-contas-eleicoes-2026)
+- Catálogo embutido: `data/tre-go-2026.json` (prazos, limites GO, GRU/PagTesouro e 30+ links oficiais do hub e subpáginas)
+- Tela no sistema: **Base legal TRE-GO 2026**
+- Lei nº 9.504/1997 · Res.-TSE 23.607/2019 · Res.-TSE 23.610/2019
+- Manual Conta+JE (PDF)
 
 O CONTAS prepara e organiza a prestação; a **entrega oficial** continua no Conta+JE do TSE.
 
 Recursos implementados:
 
-- Contas bancárias com fonte: Doações para Campanha, Fundo Partidário, FEFC
-- Tipos de receita Conta+JE (próprios, PF, partido, outros candidatos, RONI, FCC, FEFC)
-- Espécies de recurso (PIX, TED, cartão, espécie, estimável…)
+- Contas bancárias com fonte: Doações para Campanha, Fundo Partidário, FEFC (obrigatórias no TRE-GO)
+- Limites de gastos e de militância Goiás 2026
+- Prazos parcial/final, RAC (10 dias), relatórios em 72h
+- Tipos de receita Conta+JE + espécies + recibo eleitoral
 - Representantes legais (advogado OAB / contabilista CRC)
-- Naturezas de despesa Conta+JE + categorias operacionais
 - Verificação de inconsistências (impeditivas / não impeditivas)
 - Qualificação com endereço e contatos
 
