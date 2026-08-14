@@ -419,7 +419,11 @@ final class Schema
                      INNER JOIN `BankAccount` a ON a.id = r.bankAccountId
                      SET r.source = 'FCC', r.updatedAt = CURRENT_TIMESTAMP(3)
                      WHERE r.source IN ('DOADOR_PF', 'DOADOR_PJ', 'RECURSOS_PF')
-                       AND (LOWER(a.label) LIKE '%vaquinha%' OR LOWER(a.label) LIKE '%vakinha%' OR a.resourceOrigin='DOACOES_CAMPANHA' AND LOWER(a.label) LIKE '%fcc%')"
+                       AND (
+                         LOWER(a.label) LIKE '%vaquinha%'
+                         OR LOWER(a.label) LIKE '%vakinha%'
+                         OR (a.resourceOrigin='DOACOES_CAMPANHA' AND LOWER(a.label) LIKE '%fcc%')
+                       )"
                 );
                 $pdo->exec(
                     "UPDATE `Revenue` r

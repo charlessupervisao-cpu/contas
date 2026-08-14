@@ -43,6 +43,13 @@ if (request_method() === 'POST') {
         'donorName' => (string) post('donorName', ''),
         'donorCpf' => (string) post('donorCpf', ''),
         'receiptNumber' => (string) post('receiptNumber', ''),
+        'donationType' => (string) post('donationType', ''),
+        'resourceSpecies' => (string) post('resourceSpecies', ''),
+        'source' => (string) post('source', ''),
+        'emitReceipt' => post('emitReceipt') ? '1' : '',
+        'isFcc' => post('isFcc') ? '1' : '',
+        'isInternet' => post('isInternet') ? '1' : '',
+        'isLoan' => post('isLoan') ? '1' : '',
         'description' => (string) post('description', ''),
         'category' => $category,
         'supplierId' => (string) post('supplierId', ''),
@@ -67,6 +74,13 @@ if (request_method() === 'POST') {
         'donorName' => post('donorName'),
         'donorCpf' => post('donorCpf'),
         'receiptNumber' => post('receiptNumber'),
+        'donationType' => post('donationType'),
+        'resourceSpecies' => post('resourceSpecies'),
+        'source' => post('source'),
+        'emitReceipt' => post('emitReceipt'),
+        'isFcc' => post('isFcc'),
+        'isInternet' => post('isInternet'),
+        'isLoan' => post('isLoan'),
         'category' => $category,
         'supplierId' => post('supplierId') ?: null,
         'naturezaOp' => post('naturezaOp'),
@@ -278,9 +292,45 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
       <p class="muted" data-donor-wait style="font-size:.82rem;margin:.15rem 0 .75rem">
         Selecione a conta bancária para liberar os dados do doador.
       </p>
+      <div class="grid grid-2">
+        <div class="field">
+          <label class="label">Tipo da doação (Conta+JE)</label>
+          <select class="select" name="donationType">
+            <option value="">— automático pela conta —</option>
+            <?php foreach (ElectoralRules::DONATION_TYPES as $code => $lab): ?>
+              <option value="<?= e($code) ?>" <?= $val('donationType') === $code ? 'selected' : '' ?>><?= e($lab) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="field">
+          <label class="label">Espécie do recurso</label>
+          <select class="select" name="resourceSpecies">
+            <option value="">— selecionar —</option>
+            <?php foreach (RESOURCE_SPECIES as $code => $lab): ?>
+              <option value="<?= e($code) ?>" <?= $val('resourceSpecies') === $code ? 'selected' : '' ?>><?= e($lab) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      </div>
       <div class="field">
-        <label class="label">Recibo</label>
-        <input class="input" name="receiptNumber" value="<?= e($val('receiptNumber')) ?>">
+        <label class="label">Fonte / classificação (dashboard)</label>
+        <select class="select" name="source">
+          <option value="">— automático (origem da conta) —</option>
+          <?php foreach (REVENUE_SOURCES as $code => $lab): ?>
+            <option value="<?= e($code) ?>" <?= $val('source') === $code ? 'selected' : '' ?>><?= e($lab) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="row-actions" style="flex-wrap:wrap;gap:.65rem;margin:.25rem 0 .75rem">
+        <label class="deposit-who-option"><input type="checkbox" name="emitReceipt" value="1" <?= $val('emitReceipt') ? 'checked' : '' ?>><span>Emitir recibo eleitoral</span></label>
+        <label class="deposit-who-option"><input type="checkbox" name="isFcc" value="1" <?= $val('isFcc') ? 'checked' : '' ?>><span>FCC (financiamento coletivo)</span></label>
+        <label class="deposit-who-option"><input type="checkbox" name="isInternet" value="1" <?= $val('isInternet') ? 'checked' : '' ?>><span>Recebida pela internet</span></label>
+        <label class="deposit-who-option"><input type="checkbox" name="isLoan" value="1" <?= $val('isLoan') ? 'checked' : '' ?>><span>Recursos próprios de empréstimo</span></label>
+      </div>
+      <div class="field">
+        <label class="label">Nº recibo eleitoral</label>
+        <input class="input" name="receiptNumber" value="<?= e($val('receiptNumber')) ?>" placeholder="Automático se marcar emissão">
+        <div class="muted" style="font-size:.78rem;margin-top:.25rem">Conta+JE §8.9 — para candidata/candidato a numeração é sequencial.</div>
       </div>
     </div>
 

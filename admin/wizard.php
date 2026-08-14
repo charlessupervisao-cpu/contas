@@ -90,25 +90,59 @@ if (request_method() === 'POST') {
             flash_set('danger', 'CNPJ do deputado / campanha inválido.');
             redirect('/admin/wizard.php');
         }
-        $pdo->prepare(
-            'UPDATE `Campaign` SET candidateName=?, candidateFullName=?, candidateNumber=?, party=?, partyNumber=?, office=?, cnpjCampaign=?, totalBudget=?, legalSpendLimit=?, website=?, situation=?, reelection=?, photoUrl=?, updatedAt=? WHERE id=?'
-        )->execute([
-            trim((string) post('candidateName')),
-            trim((string) post('candidateFullName')),
-            trim((string) post('candidateNumber')),
-            trim((string) post('party')),
-            trim((string) post('partyNumber')),
-            trim((string) post('office', 'Deputado Estadual')),
-            $cnpjCampaign !== '' ? $cnpjCampaign : null,
-            parse_money_input((string) post('totalBudget')),
-            parse_money_input((string) post('legalSpendLimit')),
-            post('website') ?: null,
-            trim((string) post('situation', 'Em campanha')),
-            post('reelection') ? 1 : 0,
-            $photoPath,
-            $now,
-            $campaign['id'],
-        ]);
+        $addressZip = only_digits((string) post('addressZip', ''));
+        $hasAddress = (bool) $pdo->query("SHOW COLUMNS FROM `Campaign` LIKE 'addressStreet'")->fetch();
+        if ($hasAddress) {
+            $pdo->prepare(
+                'UPDATE `Campaign` SET candidateName=?, candidateFullName=?, candidateNumber=?, party=?, partyNumber=?, office=?, cnpjCampaign=?, totalBudget=?, legalSpendLimit=?, website=?, situation=?, reelection=?, photoUrl=?, electoralTitle=?, phone=?, email=?, addressZip=?, addressStreet=?, addressNumber=?, addressComplement=?, addressDistrict=?, addressCity=?, addressState=?, updatedAt=? WHERE id=?'
+            )->execute([
+                trim((string) post('candidateName')),
+                trim((string) post('candidateFullName')),
+                trim((string) post('candidateNumber')),
+                trim((string) post('party')),
+                trim((string) post('partyNumber')),
+                trim((string) post('office', 'Deputado Estadual')),
+                $cnpjCampaign !== '' ? $cnpjCampaign : null,
+                parse_money_input((string) post('totalBudget')),
+                parse_money_input((string) post('legalSpendLimit')),
+                post('website') ?: null,
+                trim((string) post('situation', 'Em campanha')),
+                post('reelection') ? 1 : 0,
+                $photoPath,
+                trim((string) post('electoralTitle', '')) ?: null,
+                trim((string) post('phone', '')) ?: null,
+                trim((string) post('email', '')) ?: null,
+                $addressZip !== '' ? $addressZip : null,
+                trim((string) post('addressStreet', '')) ?: null,
+                trim((string) post('addressNumber', '')) ?: null,
+                trim((string) post('addressComplement', '')) ?: null,
+                trim((string) post('addressDistrict', '')) ?: null,
+                trim((string) post('addressCity', '')) ?: null,
+                strtoupper(trim((string) post('addressState', ''))) ?: null,
+                $now,
+                $campaign['id'],
+            ]);
+        } else {
+            $pdo->prepare(
+                'UPDATE `Campaign` SET candidateName=?, candidateFullName=?, candidateNumber=?, party=?, partyNumber=?, office=?, cnpjCampaign=?, totalBudget=?, legalSpendLimit=?, website=?, situation=?, reelection=?, photoUrl=?, updatedAt=? WHERE id=?'
+            )->execute([
+                trim((string) post('candidateName')),
+                trim((string) post('candidateFullName')),
+                trim((string) post('candidateNumber')),
+                trim((string) post('party')),
+                trim((string) post('partyNumber')),
+                trim((string) post('office', 'Deputado Estadual')),
+                $cnpjCampaign !== '' ? $cnpjCampaign : null,
+                parse_money_input((string) post('totalBudget')),
+                parse_money_input((string) post('legalSpendLimit')),
+                post('website') ?: null,
+                trim((string) post('situation', 'Em campanha')),
+                post('reelection') ? 1 : 0,
+                $photoPath,
+                $now,
+                $campaign['id'],
+            ]);
+        }
         audit_log($user['id'], 'UPDATE', 'Campaign', (string) $campaign['id'], 'Atualizou dados da campanha · CNPJ ' . ($cnpjCampaign ?: '—'));
         flash_set('ok', 'Campanha e foto atualizadas.');
     } catch (Throwable $e) {
@@ -119,13 +153,15 @@ if (request_method() === 'POST') {
 
 $status = Demo::wizardStatus();
 $steps = [
-    ['campanha', 'Campanha + foto', '/admin/wizard.php', true],
-    ['contas', 'Contas bancárias', '/admin/contas.php', true],
+    ['campanha', 'Campanha + foto + endereço', '/admin/wizard.php', true],
+    ['contas', 'Contas bancárias (Doações / FP / FEFC)', '/admin/contas.php', true],
+    ['representantes', 'Representantes legais', '/admin/representantes.php', true],
     ['vinculos', 'Vínculos', '/admin/vinculos.php', true],
     ['fornecedores', 'Fornecedores', '/admin/fornecedores.php', true],
     ['veiculos', 'Veículos', '/admin/veiculos.php', false],
     ['cabos', 'Cabos', '/admin/cabos.php', false],
     ['receitas', 'Receitas / Despesas', '/admin/lancamento.php', true],
+    ['inconsistencias', 'Verificar inconsistências', '/admin/inconsistencias.php', true],
 ];
 $photoUrl = !empty($campaign['photoUrl']) ? url_path(ltrim((string) $campaign['photoUrl'], '/')) : '';
 $launchCounts = $campaign ? Demo::financialLaunchCounts((string) $campaign['id']) : [
@@ -200,6 +236,28 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
       <div class="field"><label class="label">Site de campanha (interno)</label><input class="input" name="website" value="<?= e($campaign['website'] ?? '') ?>" placeholder="opcional"></div>
       <div class="field"><label class="label">Situação</label><input class="input" name="situation" value="<?= e($campaign['situation'] ?? '') ?>"></div>
       <label class="row-actions"><input type="checkbox" name="reelection" value="1" <?= !empty($campaign['reelection'])?'checked':'' ?>> Reeleição</label>
+
+      <h3 class="display" style="margin:1.25rem 0 .5rem;font-size:1.05rem">Qualificação Conta+JE</h3>
+      <p class="muted" style="font-size:.82rem;margin:0 0 .75rem">Endereço e contatos exigidos na análise preventiva (Res.-TSE 23.607/2019).</p>
+      <div class="grid grid-2">
+        <div class="field"><label class="label">Título eleitoral</label><input class="input" name="electoralTitle" value="<?= e((string) ($campaign['electoralTitle'] ?? '')) ?>"></div>
+        <div class="field"><label class="label">Telefone</label><input class="input" name="phone" data-mask="phone" value="<?= e((string) ($campaign['phone'] ?? '')) ?>"></div>
+      </div>
+      <div class="field"><label class="label">E-mail</label><input class="input" type="email" name="email" value="<?= e((string) ($campaign['email'] ?? '')) ?>"></div>
+      <div class="grid grid-2">
+        <div class="field"><label class="label">CEP</label><input class="input" name="addressZip" data-mask="cep" data-cep-lookup inputmode="numeric" value="<?= e((string) ($campaign['addressZip'] ?? '')) ?>"></div>
+        <div class="field"><label class="label">UF</label><input class="input" name="addressState" maxlength="2" value="<?= e((string) ($campaign['addressState'] ?? $campaign['state'] ?? 'GO')) ?>"></div>
+      </div>
+      <div class="field"><label class="label">Logradouro</label><input class="input" name="addressStreet" value="<?= e((string) ($campaign['addressStreet'] ?? '')) ?>"></div>
+      <div class="grid grid-2">
+        <div class="field"><label class="label">Número</label><input class="input" name="addressNumber" value="<?= e((string) ($campaign['addressNumber'] ?? '')) ?>"></div>
+        <div class="field"><label class="label">Complemento</label><input class="input" name="addressComplement" value="<?= e((string) ($campaign['addressComplement'] ?? '')) ?>"></div>
+      </div>
+      <div class="grid grid-2">
+        <div class="field"><label class="label">Bairro</label><input class="input" name="addressDistrict" value="<?= e((string) ($campaign['addressDistrict'] ?? '')) ?>"></div>
+        <div class="field"><label class="label">Cidade</label><input class="input" name="addressCity" value="<?= e((string) ($campaign['addressCity'] ?? '')) ?>"></div>
+      </div>
+
       <div class="row-actions" style="margin-top:1rem">
         <button class="btn btn-primary" type="submit">Salvar</button>
         <a class="btn btn-ghost" href="<?= e(url_path('admin/index.php')) ?>">Voltar</a>

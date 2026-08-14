@@ -6,6 +6,26 @@ Desenvolvido por [Synetiq](https://synetiq.com.br) — Soluções Digitais Intel
 
 Sistema **interno** (sem portal público). Quem não é Master entra só para **consultar**, sem alterar dados.
 
+## Conformidade Conta+JE / TSE 2026
+
+Alinhado ao Manual Conta+JE e à legislação eleitoral:
+
+- Lei nº 9.504/1997
+- Resolução-TSE nº 23.607/2019
+- Manual Conta+JE (PDF de referência em `https://contas.synetiq.com.br/sistematse.pdf`)
+
+O CONTAS prepara e organiza a prestação; a **entrega oficial** continua no Conta+JE do TSE.
+
+Recursos implementados:
+
+- Contas bancárias com fonte: Doações para Campanha, Fundo Partidário, FEFC
+- Tipos de receita Conta+JE (próprios, PF, partido, outros candidatos, RONI, FCC, FEFC)
+- Espécies de recurso (PIX, TED, cartão, espécie, estimável…)
+- Representantes legais (advogado OAB / contabilista CRC)
+- Naturezas de despesa Conta+JE + categorias operacionais
+- Verificação de inconsistências (impeditivas / não impeditivas)
+- Qualificação com endereço e contatos
+
 ## Deploy limpo (cPanel)
 
 ### Download no GitHub

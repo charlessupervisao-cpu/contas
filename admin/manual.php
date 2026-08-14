@@ -452,20 +452,35 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
   </section>
 
   <section class="panel manual-checklist">
-    <h3 class="display" style="margin-top:0">Checklist mínimo para funcionar</h3>
+    <h3 class="display" style="margin-top:0">Checklist mínimo Conta+JE / TSE 2026</h3>
     <ol class="manual-check">
       <li>Login Master</li>
-      <li>Campanha + foto salvos</li>
-      <li>Pelo menos 1 conta bancária</li>
-      <li>Vínculos de receita/despesa configurados</li>
-      <li>Pelo menos 1 fornecedor (para despesas)</li>
-      <li>Saldo inicial ajustado (se necessário)</li>
-      <li>Primeiro lançamento de teste</li>
+      <li>Campanha + foto + endereço/contatos (qualificação)</li>
+      <li>Contas bancárias com fonte: Doações, Fundo Partidário e/ou FEFC</li>
+      <li>Representantes legais (advogado OAB + contabilista CRC)</li>
+      <li>Vínculos categoria/fonte → conta</li>
+      <li>Fornecedores para despesas com documento fiscal</li>
+      <li>Receitas com tipo, espécie e recibo eleitoral quando couber</li>
+      <li>Verificar inconsistências (impeditivas zeradas)</li>
     </ol>
     <div class="row-actions" style="margin-top:1rem">
       <a class="btn btn-primary" href="<?= e(url_path('admin/wizard.php')) ?>">Ir para Campanha / foto</a>
-      <a class="btn btn-secondary" href="<?= e(url_path('admin/index.php')) ?>">Abrir Dashboard</a>
+      <a class="btn btn-secondary" href="<?= e(url_path('admin/inconsistencias.php')) ?>">Ver inconsistências</a>
+      <a class="btn btn-ghost" href="<?= e(ElectoralRules::MANUAL_URL) ?>" target="_blank" rel="noopener">Manual Conta+JE (PDF)</a>
     </div>
+  </section>
+
+  <section class="panel">
+    <h3 class="display" style="margin-top:0">Base legal 2026</h3>
+    <ul class="manual-check" style="list-style:disc">
+      <?php foreach (ElectoralRules::LEGAL_BASIS as $item): ?>
+        <li><?= e($item) ?></li>
+      <?php endforeach; ?>
+    </ul>
+    <p class="muted" style="line-height:1.45">
+      O CONTAS organiza a movimentação interna da campanha alinhada ao Conta+JE.
+      A <strong>entrega oficial</strong> à Justiça Eleitoral continua sendo feita no sistema Conta+JE do TSE.
+    </p>
   </section>
 
   <footer class="panel" style="text-align:center">
