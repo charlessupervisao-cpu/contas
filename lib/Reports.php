@@ -195,11 +195,11 @@ final class Reports
     public static function groupLabels(): array
     {
         return [
-            'diversos' => 'Diversos (Conta+JE §11.1)',
-            'receitas' => 'Receitas (Conta+JE §11.2)',
-            'despesas' => 'Despesas (Conta+JE §11.3)',
-            'recibos' => 'Recibos eleitorais (Conta+JE §11.4)',
-            'trego' => 'Prazos e limites TRE-GO 2026',
+            'diversos' => 'Relatórios > Diversos (Conta+JE §11.1)',
+            'receitas' => 'Relatórios > Receitas (Conta+JE §11.2)',
+            'despesas' => 'Relatórios > Despesas (Conta+JE §11.3)',
+            'recibos' => 'Relatórios > Recibos Eleitorais (Conta+JE §11.4)',
+            'trego' => 'Prazos e limites TRE-GO / CECEP 2026',
         ];
     }
 

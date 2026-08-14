@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Relatórios Conta+JE §11 + prazos TRE-GO — conferência / impressão / CSV.
+ * Relatórios Conta+JE §11 + prazos TRE-GO — formato oficial TSE (impressão/PDF/CSV).
  */
 require_once dirname(__DIR__) . '/bootstrap.php';
 
@@ -13,7 +13,6 @@ $campaign = Metrics::getCampaign();
 
 $type = trim((string) get('tipo', ''));
 $format = strtolower(trim((string) get('formato', 'html')));
-$print = (int) get('print', 0) === 1 || $format === 'print';
 
 $catalog = Reports::catalog();
 $groups = Reports::groupLabels();
@@ -21,7 +20,8 @@ $def = $type !== '' ? Reports::find($type) : null;
 
 if ($def && $format === 'csv') {
     $payload = Reports::build($type, $campaign);
-    $filename = 'contas-' . $type . '-' . date('Ymd-His') . '.csv';
+    $safe = preg_replace('/[^a-z0-9\-]+/i', '-', $type) ?: 'relatorio';
+    $filename = 'ContaJE-' . $safe . '-' . date('Ymd-His') . '.csv';
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     echo Reports::toCsv($payload);
@@ -41,7 +41,7 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
   <div class="page-toolbar-main">
     <a class="btn btn-ghost" href="<?= e(url_path('admin/index.php')) ?>">← Dashboard</a>
     <div>
-      <div class="fin-kicker" style="margin:0">Conta+JE §11 · TRE-GO 2026</div>
+      <div class="fin-kicker" style="margin:0">Formato oficial Conta+JE / TSE · TRE-GO 2026</div>
       <strong style="font-size:1.05rem">Relatórios e recibos eleitorais</strong>
     </div>
   </div>
@@ -52,10 +52,11 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
   </div>
 </div>
 
-<p class="muted" style="margin:0 0 1rem;max-width:48rem;line-height:1.45">
-  Relatórios de conferência alinhados ao menu <strong>Relatórios</strong> do Conta+JE
-  (diversos, receitas, despesas, recibos) e aos prazos do TRE-GO (RF 72h, parcial e final).
-  Use para revisar dados antes da entrega oficial no Conta+JE. Formatos: HTML/impressão (PDF via navegador) e CSV.
+<p class="muted" style="margin:0 0 1rem;max-width:52rem;line-height:1.45">
+  Catálogo alinhado ao menu <strong>Relatórios</strong> do Conta+JE (§11 do Manual TSE):
+  Diversos, Receitas, Despesas e Recibos Eleitorais, mais prazos TRE-GO (RF 72h, parcial e final).
+  Cada relatório abre no <strong>formato oficial</strong> (cabeçalho Justiça Eleitoral, qualificação do prestador,
+  tabela e rodapé Conta+JE). Use <em>Imprimir / PDF</em> ou exporte CSV (UTF-8) para conferência antes da entrega oficial.
 </p>
 
 <?php foreach ($groups as $gid => $glabel): ?>
@@ -70,7 +71,7 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
             <div class="muted" style="font-size:.82rem;line-height:1.4;margin-top:.15rem"><?= e($item['desc']) ?></div>
           </div>
           <div class="row-actions" style="gap:.35rem">
-            <a class="btn btn-primary" href="<?= e(url_path('admin/relatorios.php?tipo=' . rawurlencode($item['id']))) ?>">Abrir</a>
+            <a class="btn btn-primary" href="<?= e(url_path('admin/relatorios.php?tipo=' . rawurlencode($item['id']) . '&formato=oficial')) ?>">Abrir oficial</a>
             <?php if (in_array('csv', $item['export'], true)): ?>
               <a class="btn btn-ghost" href="<?= e(url_path('admin/relatorios.php?tipo=' . rawurlencode($item['id']) . '&formato=csv')) ?>">CSV</a>
             <?php endif; ?>
@@ -98,7 +99,7 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
   <div class="page-toolbar-main">
     <a class="btn btn-ghost" href="<?= e(url_path('admin/relatorios.php')) ?>">← Relatórios</a>
     <div>
-      <div class="fin-kicker" style="margin:0"><?= e($groups[$def['group']] ?? 'Relatório') ?></div>
+      <div class="fin-kicker" style="margin:0"><?= e($groups[$def['group']] ?? 'Relatório') ?> · formato oficial TSE</div>
       <strong style="font-size:1.05rem"><?= e($def['label']) ?></strong>
     </div>
   </div>
@@ -107,76 +108,13 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
     <?php if (in_array('csv', $def['export'], true)): ?>
       <a class="btn btn-secondary" href="<?= e(url_path('admin/relatorios.php?tipo=' . rawurlencode($type) . '&formato=csv')) ?>">Exportar CSV</a>
     <?php endif; ?>
+    <a class="btn btn-ghost" href="<?= e(url_path('admin/relatorios.php?tipo=' . rawurlencode($type) . '&formato=oficial')) ?>">Atualizar</a>
     <a class="btn btn-ghost" href="<?= e(url_path('admin/inconsistencias.php')) ?>">Inconsistências</a>
   </div>
 </div>
 
 <?php
-  $meta = $payload['meta'] ?? [];
-  $columns = $payload['columns'] ?? [];
-  $rows = $payload['rows'] ?? [];
-  $summary = $payload['summary'] ?? [];
-  $note = $payload['note'] ?? null;
-?>
+  require dirname(__DIR__) . '/templates/relatorio_oficial.php';
+endif;
 
-<div class="panel report-sheet animate-rise">
-  <div class="report-head">
-    <div class="fin-kicker" style="margin:0"><?= e(APP_NAME) ?> · build <?= e((string) ($meta['build'] ?? APP_BUILD)) ?></div>
-    <h2 class="display" style="margin:.2rem 0 .35rem;font-size:1.35rem"><?= e((string) ($meta['title'] ?? $def['label'])) ?></h2>
-    <div class="muted" style="font-size:.85rem;line-height:1.45">
-      <?= e((string) ($meta['campaign'] ?? '')) ?>
-      <?php if (!empty($meta['office'])): ?> · <?= e((string) $meta['office']) ?><?php endif; ?>
-      <?php if (!empty($meta['party'])): ?> · <?= e((string) $meta['party']) ?><?php endif; ?>
-      <?php if (!empty($meta['cnpj'])): ?> · CNPJ <?= e((string) $meta['cnpj']) ?><?php endif; ?>
-      <br>
-      Gerado em <?= e(datetime_br((string) ($meta['generatedAt'] ?? date('c')))) ?>
-      · Conferência interna — entrega oficial no Conta+JE
-    </div>
-  </div>
-
-  <?php if ($summary): ?>
-    <div class="row-actions" style="margin:1rem 0;gap:.45rem;flex-wrap:wrap">
-      <?php foreach ($summary as $sk => $sv): ?>
-        <div class="stat-chip">
-          <div class="l"><?= e((string) $sk) ?></div>
-          <div class="n" style="font-size:.95rem"><?= e((string) $sv) ?></div>
-        </div>
-      <?php endforeach; ?>
-    </div>
-  <?php endif; ?>
-
-  <?php if ($note): ?>
-    <div class="alert alert-info" style="margin-bottom:1rem"><?= e((string) $note) ?></div>
-  <?php endif; ?>
-
-  <?php if (!$columns): ?>
-    <div class="empty">Nada a exibir neste relatório.</div>
-  <?php elseif (!$rows): ?>
-    <div class="empty">Nenhum lançamento encontrado para os filtros deste relatório.</div>
-  <?php else: ?>
-    <div class="table-wrap">
-      <table class="table report-table">
-        <thead>
-          <tr>
-            <?php foreach ($columns as $col): ?>
-              <th><?= e((string) $col) ?></th>
-            <?php endforeach; ?>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($rows as $row): ?>
-            <tr>
-              <?php foreach ($columns as $col): ?>
-                <td><?= e((string) ($row[$col] ?? '')) ?></td>
-              <?php endforeach; ?>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
-    </div>
-    <div class="muted" style="margin-top:.65rem;font-size:.8rem"><?= count($rows) ?> linha(s)</div>
-  <?php endif; ?>
-</div>
-<?php endif; ?>
-
-<?php require dirname(__DIR__) . '/templates/admin_layout_end.php'; ?>
+require dirname(__DIR__) . '/templates/admin_layout_end.php';

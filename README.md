@@ -32,18 +32,30 @@ Recursos implementados:
 
 ## Deploy limpo (cPanel)
 
-### Download no GitHub
+### Download pronto
 
-Pacote pronto para cPanel (branch desta PR):
+Pacote **completo** (todos os arquivos/pastas + relatórios oficiais Conta+JE/TSE):
 
-- [`releases/contas-cpanel-deploy.zip`](releases/contas-cpanel-deploy.zip)
+- [`releases/CONTAS-DEPLOY-COMPLETO.zip`](releases/CONTAS-DEPLOY-COMPLETO.zip) ← use este
+- Alias: [`releases/contas-cpanel-deploy.zip`](releases/contas-cpanel-deploy.zip)
+
+Dentro do ZIP: `LEIA-ME-DEPLOY.txt` + `MANIFEST.txt` (SHA-256 de cada arquivo).
 
 Ou gere localmente:
 
 ```bash
 bash bin/pack-deploy.sh
-# → dist/contas-deploy-YYYYMMDD.zip
 ```
+
+O script valida a sintaxe de **todos** os PHP antes de zipar (evita erro 500 por parse).
+
+### Atualização no servidor
+
+1. Backup de `.env` e `uploads/`
+2. Extrair o ZIP sobrescrevendo a raiz do domínio
+3. Manter `.env` e `uploads/`
+4. Confirmar `https://contas.synetiq.com.br/api/health.php` → `"build":"2026.08.14-deploy-completo"`
+5. Menu: **Relatórios Conta+JE** (formato oficial TSE) · Base legal TRE-GO · Inconsistências
 
 ### O que sobe no servidor
 
@@ -51,14 +63,14 @@ bash bin/pack-deploy.sh
 contas/
 ├── .htaccess
 ├── .env.example
+├── LEIA-ME-DEPLOY.txt · MANIFEST.txt
 ├── bootstrap.php
-├── index.php · login.php · logout.php
-├── install.php          ← apagar depois de instalar
-├── admin/               ← painel + dashboard
-├── api/
-├── assets/
-├── config/ · lib/ · sql/ · templates/
-└── uploads/candidates/  ← foto do deputado (gravável)
+├── index.php · login.php · logout.php · install.php
+├── admin/          ← painel, relatórios oficiais, base legal
+├── api/            ← health, cep, cnpj, nfe
+├── assets/         ← css (incl. relatorio-oficial.css), js, img
+├── config/ · lib/ · sql/ · templates/ · data/
+└── uploads/        ← contracts + candidates (gravável)
 ```
 
 ### Banco de dados (cPanel)
