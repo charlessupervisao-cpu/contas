@@ -28,12 +28,15 @@ final class Schema
         self::migrateSupplierNfeIntoExpenses($pdo);
         self::ensureCaboColumns($pdo);
         self::ensureBankAccountDepositColumns($pdo);
+        self::ensureElectoral2026($pdo);
         self::ensureExpenseCategoryTable($pdo);
+        self::ensureTseExpenseNatures($pdo);
         self::ensureExpenseInstallmentColumns($pdo);
         self::ensureTeamTable($pdo);
         self::ensureContractPdfColumn($pdo);
         self::ensurePasswordResetTable($pdo);
         self::repairRevenueSourceByAccount($pdo);
+        self::migrateLegacyRevenueSources($pdo);
     }
 
     /** Parcelamento de despesa (até 2x) — vínculo entre parcelas. */
@@ -251,9 +254,146 @@ final class Schema
         }
     }
 
+    /** Conta+JE / TSE 2026 — colunas e tabelas de conformidade. */
+    private static function ensureElectoral2026(PDO $pdo): void
+    {
+        if (self::tableExists($pdo, 'BankAccount')) {
+            if (!self::columnExists($pdo, 'BankAccount', 'resourceOrigin')) {
+                $pdo->exec("ALTER TABLE `BankAccount` ADD COLUMN `resourceOrigin` VARCHAR(64) NULL AFTER `accountType`");
+            }
+            if (!self::columnExists($pdo, 'BankAccount', 'openedAt')) {
+                $pdo->exec('ALTER TABLE `BankAccount` ADD COLUMN `openedAt` DATE NULL AFTER `resourceOrigin`');
+            }
+            // Heurística: rotula contas existentes
+            try {
+                $pdo->exec("UPDATE `BankAccount` SET resourceOrigin='FUNDO_PARTIDARIO' WHERE (resourceOrigin IS NULL OR resourceOrigin='') AND (LOWER(label) LIKE '%fundo%')");
+                $pdo->exec("UPDATE `BankAccount` SET resourceOrigin='FEFC' WHERE (resourceOrigin IS NULL OR resourceOrigin='') AND (LOWER(label) LIKE '%fefc%' OR LOWER(label) LIKE '%fundo especial%')");
+                $pdo->exec("UPDATE `BankAccount` SET resourceOrigin='DOACOES_CAMPANHA' WHERE (resourceOrigin IS NULL OR resourceOrigin='') AND (LOWER(label) LIKE '%vaquinha%' OR LOWER(label) LIKE '%doação%' OR LOWER(label) LIKE '%doacao%' OR LOWER(label) LIKE '%principal%' OR LOWER(label) LIKE '%fcc%')");
+            } catch (Throwable) {
+            }
+        }
+
+        if (self::tableExists($pdo, 'Revenue')) {
+            $revCols = [
+                'donationType' => 'VARCHAR(64) NULL',
+                'resourceOrigin' => 'VARCHAR(64) NULL',
+                'resourceSpecies' => 'VARCHAR(64) NULL',
+                'emitReceipt' => 'BOOLEAN NOT NULL DEFAULT false',
+                'isFcc' => 'BOOLEAN NOT NULL DEFAULT false',
+                'isInternet' => 'BOOLEAN NOT NULL DEFAULT false',
+                'isLoan' => 'BOOLEAN NOT NULL DEFAULT false',
+            ];
+            foreach ($revCols as $name => $def) {
+                if (!self::columnExists($pdo, 'Revenue', $name)) {
+                    $pdo->exec("ALTER TABLE `Revenue` ADD COLUMN `{$name}` {$def}");
+                }
+            }
+        }
+
+        if (self::tableExists($pdo, 'Campaign')) {
+            $campCols = [
+                'electoralTitle' => 'VARCHAR(191) NULL',
+                'phone' => 'VARCHAR(64) NULL',
+                'email' => 'VARCHAR(191) NULL',
+                'addressZip' => 'VARCHAR(16) NULL',
+                'addressStreet' => 'VARCHAR(191) NULL',
+                'addressNumber' => 'VARCHAR(32) NULL',
+                'addressComplement' => 'VARCHAR(191) NULL',
+                'addressDistrict' => 'VARCHAR(191) NULL',
+                'addressCity' => 'VARCHAR(191) NULL',
+                'addressState' => 'VARCHAR(8) NULL',
+            ];
+            foreach ($campCols as $name => $def) {
+                if (!self::columnExists($pdo, 'Campaign', $name)) {
+                    $pdo->exec("ALTER TABLE `Campaign` ADD COLUMN `{$name}` {$def}");
+                }
+            }
+        }
+
+        if (!self::tableExists($pdo, 'Representative')) {
+            $pdo->exec(
+                'CREATE TABLE `Representative` (
+                    `id` VARCHAR(191) NOT NULL,
+                    `campaignId` VARCHAR(191) NOT NULL,
+                    `role` VARCHAR(64) NOT NULL,
+                    `name` VARCHAR(191) NOT NULL,
+                    `cpf` VARCHAR(32) NULL,
+                    'email` VARCHAR(191) NULL,
+                    `phone` VARCHAR(64) NULL,
+                    `oabUf` VARCHAR(8) NULL,
+                    `oabNumber` VARCHAR(64) NULL,
+                    `crcUf` VARCHAR(8) NULL,
+                    `crcNumber` VARCHAR(64) NULL,
+                    `roleOther` VARCHAR(191) NULL,
+                    `active` BOOLEAN NOT NULL DEFAULT true,
+                    `notes` TEXT NULL,
+                    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+                    `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+                    INDEX `Representative_campaignId_idx`(`campaignId`),
+                    INDEX `Representative_role_idx`(`role`),
+                    PRIMARY KEY (`id`)
+                ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+            );
+        }
+    }
+
+    /** Insere naturezas Conta+JE ausentes sem apagar categorias customizadas. */
+    private static function ensureTseExpenseNatures(PDO $pdo): void
+    {
+        if (!self::tableExists($pdo, 'ExpenseCategory')) {
+            return;
+        }
+        $now = date('Y-m-d H:i:s');
+        $sel = $pdo->prepare('SELECT id FROM `ExpenseCategory` WHERE code=? LIMIT 1');
+        $ins = $pdo->prepare(
+            'INSERT INTO `ExpenseCategory` (id, code, label, color, active, sortOrder, createdAt, updatedAt)
+             VALUES (?,?,?,?,1,?,?,?)'
+        );
+        $max = (int) $pdo->query('SELECT COALESCE(MAX(sortOrder), -1) AS m FROM `ExpenseCategory`')->fetch()['m'];
+        foreach (DEFAULT_EXPENSE_CATEGORIES as $code => $label) {
+            $sel->execute([$code]);
+            if ($sel->fetch()) {
+                continue;
+            }
+            $max++;
+            $ins->execute([
+                cuid(),
+                $code,
+                $label,
+                DEFAULT_EXPENSE_CATEGORY_COLORS[$code] ?? '#0d9488',
+                $max,
+                $now,
+                $now,
+            ]);
+        }
+        if (class_exists('Categories')) {
+            Categories::resetCache();
+        }
+    }
+
+    /** Migra códigos legados de receita para o catálogo Conta+JE 2026. */
+    private static function migrateLegacyRevenueSources(PDO $pdo): void
+    {
+        if (!self::tableExists($pdo, 'Revenue')) {
+            return;
+        }
+        try {
+            $pdo->exec("UPDATE `Revenue` SET source='RECURSOS_PF', donationType='RECURSOS_PF' WHERE source='DOADOR_PF'");
+            $pdo->exec("UPDATE `Revenue` SET source='FCC', donationType='RECURSOS_PF', isFcc=1 WHERE source='VAQUINHA_ELEITORAL'");
+            $pdo->exec("UPDATE `Revenue` SET source='FUNDO_PARTIDARIO', donationType='RECURSOS_PARTIDO', resourceOrigin='FUNDO_PARTIDARIO' WHERE source='FUNDO_PARTIDARIO' AND (donationType IS NULL OR donationType='')");
+            $pdo->exec("UPDATE `Revenue` SET source='FEFC', donationType='RECURSOS_PARTIDO', resourceOrigin='FEFC' WHERE source='FEFC'");
+            // AccountMapping legado
+            if (self::tableExists($pdo, 'AccountMapping')) {
+                $pdo->exec("UPDATE `AccountMapping` SET code='RECURSOS_PF' WHERE kind='REVENUE_SOURCE' AND code='DOADOR_PF'");
+                $pdo->exec("UPDATE `AccountMapping` SET code='FCC' WHERE kind='REVENUE_SOURCE' AND code='VAQUINHA_ELEITORAL'");
+            }
+        } catch (Throwable) {
+        }
+    }
+
     /**
      * Receitas gravadas só com DOADOR_PF/PJ (após remoção do campo Fonte)
-     * passam a usar Fundo/Vaquinha quando a conta está vinculada a essas fontes.
+     * passam a usar Fundo/Vaquinha/FEFC quando a conta está vinculada a essas fontes.
      */
     private static function repairRevenueSourceByAccount(PDO $pdo): void
     {
@@ -267,27 +407,33 @@ final class Schema
                    ON m.campaignId = r.campaignId
                   AND m.kind = 'REVENUE_SOURCE'
                   AND m.bankAccountId = r.bankAccountId
-                  AND m.code IN ('FUNDO_PARTIDARIO', 'VAQUINHA_ELEITORAL')
-                 SET r.source = m.code, r.updatedAt = CURRENT_TIMESTAMP(3)
-                 WHERE r.source IN ('DOADOR_PF', 'DOADOR_PJ')
+                  AND m.code IN ('FUNDO_PARTIDARIO', 'FEFC', 'FCC', 'VAQUINHA_ELEITORAL')
+                 SET r.source = IF(m.code='VAQUINHA_ELEITORAL','FCC',m.code), r.updatedAt = CURRENT_TIMESTAMP(3)
+                 WHERE r.source IN ('DOADOR_PF', 'DOADOR_PJ', 'RECURSOS_PF')
                    AND r.bankAccountId IS NOT NULL"
             );
 
-            // Contas com nome óbvio, mesmo sem vínculo configurado
             if (self::tableExists($pdo, 'BankAccount')) {
                 $pdo->exec(
                     "UPDATE `Revenue` r
                      INNER JOIN `BankAccount` a ON a.id = r.bankAccountId
-                     SET r.source = 'VAQUINHA_ELEITORAL', r.updatedAt = CURRENT_TIMESTAMP(3)
-                     WHERE r.source IN ('DOADOR_PF', 'DOADOR_PJ')
-                       AND (LOWER(a.label) LIKE '%vaquinha%' OR LOWER(a.label) LIKE '%vakinha%')"
+                     SET r.source = 'FCC', r.updatedAt = CURRENT_TIMESTAMP(3)
+                     WHERE r.source IN ('DOADOR_PF', 'DOADOR_PJ', 'RECURSOS_PF')
+                       AND (LOWER(a.label) LIKE '%vaquinha%' OR LOWER(a.label) LIKE '%vakinha%' OR a.resourceOrigin='DOACOES_CAMPANHA' AND LOWER(a.label) LIKE '%fcc%')"
                 );
                 $pdo->exec(
                     "UPDATE `Revenue` r
                      INNER JOIN `BankAccount` a ON a.id = r.bankAccountId
                      SET r.source = 'FUNDO_PARTIDARIO', r.updatedAt = CURRENT_TIMESTAMP(3)
-                     WHERE r.source IN ('DOADOR_PF', 'DOADOR_PJ')
-                       AND LOWER(a.label) LIKE '%fundo%'"
+                     WHERE r.source IN ('DOADOR_PF', 'DOADOR_PJ', 'RECURSOS_PF')
+                       AND (LOWER(a.label) LIKE '%fundo%' OR a.resourceOrigin='FUNDO_PARTIDARIO')"
+                );
+                $pdo->exec(
+                    "UPDATE `Revenue` r
+                     INNER JOIN `BankAccount` a ON a.id = r.bankAccountId
+                     SET r.source = 'FEFC', r.updatedAt = CURRENT_TIMESTAMP(3)
+                     WHERE r.source IN ('DOADOR_PF', 'DOADOR_PJ', 'RECURSOS_PF', 'FUNDO_PARTIDARIO')
+                       AND (LOWER(a.label) LIKE '%fefc%' OR a.resourceOrigin='FEFC')"
                 );
             }
         } catch (Throwable) {

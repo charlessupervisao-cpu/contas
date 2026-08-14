@@ -14,6 +14,14 @@ $editId = trim((string) get('id', ''));
 $edit = null;
 $errors = [];
 
+$hasResourceOrigin = false;
+$hasOpenedAt = false;
+try {
+    $hasResourceOrigin = (bool) $pdo->query("SHOW COLUMNS FROM `BankAccount` LIKE 'resourceOrigin'")->fetch();
+    $hasOpenedAt = (bool) $pdo->query("SHOW COLUMNS FROM `BankAccount` LIKE 'openedAt'")->fetch();
+} catch (Throwable) {
+}
+
 if ($editId !== '' && $campaign) {
     $st = $pdo->prepare('SELECT * FROM `BankAccount` WHERE id=? AND campaignId=? LIMIT 1');
     $st->execute([$editId, $campaign['id']]);
@@ -80,8 +88,26 @@ if (request_method() === 'POST' && $canWrite) {
         $accountNumber = trim((string) post('accountNumber', ''));
         $accountType = trim((string) post('accountType', 'Corrente')) ?: 'Corrente';
         $balance = parse_money_input((string) post('balance', '0'));
-        $depositCpf = post('depositCpf') ? 1 : 0;
-        $depositCnpj = post('depositCnpj') ? 1 : 0;
+        $resourceOrigin = trim((string) post('resourceOrigin', ''));
+        if ($resourceOrigin !== '' && !isset(BANK_RESOURCE_ORIGINS[$resourceOrigin])) {
+            $errors[] = 'Fonte do recurso inválida.';
+            $resourceOrigin = '';
+        }
+        $openedAtRaw = trim((string) post('openedAt', ''));
+        $openedAt = $openedAtRaw !== '' ? $openedAtRaw : null;
+        $todayYmd = (new DateTimeImmutable('today'))->format('Y-m-d');
+
+        $depositCpf = 0;
+        $depositCnpj = 0;
+        if ($resourceOrigin !== '') {
+            $flags = ElectoralRules::depositFlagsForOrigin($resourceOrigin);
+            $depositCpf = $flags['cpf'] ? 1 : 0;
+            $depositCnpj = $flags['cnpj'] ? 1 : 0;
+        }
+        if (array_key_exists('depositCpf', $_POST) || array_key_exists('depositCnpj', $_POST)) {
+            $depositCpf = post('depositCpf') ? 1 : 0;
+            $depositCnpj = post('depositCnpj') ? 1 : 0;
+        }
 
         if ($label === '' || $bankName === '' || $agency === '' || $accountNumber === '') {
             $errors[] = 'Preencha rótulo, banco, agência e conta.';
@@ -89,13 +115,33 @@ if (request_method() === 'POST' && $canWrite) {
         if ($depositCpf === 0 && $depositCnpj === 0) {
             $errors[] = 'Selecione quem pode depositar nessa conta: CPF e/ou CNPJ.';
         }
+        if ($openedAt !== null) {
+            $dt = DateTimeImmutable::createFromFormat('Y-m-d', $openedAt);
+            $valid = $dt && $dt->format('Y-m-d') === $openedAt;
+            if (!$valid) {
+                $errors[] = 'Data de abertura inválida.';
+            } elseif ($openedAt > $todayYmd) {
+                $errors[] = 'Data de abertura não pode ser futura.';
+            }
+        }
 
         if (!$errors && $campaign) {
+            $originVal = $resourceOrigin !== '' ? $resourceOrigin : null;
             if ($id !== '') {
-                $pdo->prepare(
-                    'UPDATE `BankAccount` SET label=?, bankName=?, bankCode=?, agency=?, accountNumber=?, accountType=?, depositCpf=?, depositCnpj=?, updatedAt=?
-                     WHERE id=? AND campaignId=?'
-                )->execute([$label, $bankName, $bankCode, $agency, $accountNumber, $accountType, $depositCpf, $depositCnpj, $now, $id, $cid]);
+                if ($hasResourceOrigin && $hasOpenedAt) {
+                    $pdo->prepare(
+                        'UPDATE `BankAccount` SET label=?, bankName=?, bankCode=?, agency=?, accountNumber=?, accountType=?, resourceOrigin=?, openedAt=?, depositCpf=?, depositCnpj=?, updatedAt=?
+                         WHERE id=? AND campaignId=?'
+                    )->execute([
+                        $label, $bankName, $bankCode, $agency, $accountNumber, $accountType,
+                        $originVal, $openedAt, $depositCpf, $depositCnpj, $now, $id, $cid,
+                    ]);
+                } else {
+                    $pdo->prepare(
+                        'UPDATE `BankAccount` SET label=?, bankName=?, bankCode=?, agency=?, accountNumber=?, accountType=?, depositCpf=?, depositCnpj=?, updatedAt=?
+                         WHERE id=? AND campaignId=?'
+                    )->execute([$label, $bankName, $bankCode, $agency, $accountNumber, $accountType, $depositCpf, $depositCnpj, $now, $id, $cid]);
+                }
                 audit_log($user['id'], 'UPDATE', 'BankAccount', $id, "Atualizou conta {$label}");
                 flash_set('ok', 'Conta atualizada.');
             } else {
@@ -107,13 +153,23 @@ if (request_method() === 'POST' && $canWrite) {
                     redirect('/admin/contas.php');
                 }
                 $newId = cuid();
-                $pdo->prepare(
-                    'INSERT INTO `BankAccount` (id, campaignId, label, bankName, bankCode, agency, accountNumber, accountType, balance, depositCpf, depositCnpj, active, sortOrder, createdAt, updatedAt)
-                     VALUES (?,?,?,?,?,?,?,?,?,?,?,1,?,?,?)'
-                )->execute([
-                    $newId, $cid, $label, $bankName, $bankCode, $agency, $accountNumber, $accountType,
-                    $balance, $depositCpf, $depositCnpj, $activeCount, $now, $now,
-                ]);
+                if ($hasResourceOrigin && $hasOpenedAt) {
+                    $pdo->prepare(
+                        'INSERT INTO `BankAccount` (id, campaignId, label, bankName, bankCode, agency, accountNumber, accountType, resourceOrigin, openedAt, balance, depositCpf, depositCnpj, active, sortOrder, createdAt, updatedAt)
+                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?)'
+                    )->execute([
+                        $newId, $cid, $label, $bankName, $bankCode, $agency, $accountNumber, $accountType,
+                        $originVal, $openedAt, $balance, $depositCpf, $depositCnpj, $activeCount, $now, $now,
+                    ]);
+                } else {
+                    $pdo->prepare(
+                        'INSERT INTO `BankAccount` (id, campaignId, label, bankName, bankCode, agency, accountNumber, accountType, balance, depositCpf, depositCnpj, active, sortOrder, createdAt, updatedAt)
+                         VALUES (?,?,?,?,?,?,?,?,?,?,?,1,?,?,?)'
+                    )->execute([
+                        $newId, $cid, $label, $bankName, $bankCode, $agency, $accountNumber, $accountType,
+                        $balance, $depositCpf, $depositCnpj, $activeCount, $now, $now,
+                    ]);
+                }
                 audit_log($user['id'], 'CREATE', 'BankAccount', $newId, "Cadastrou conta {$label} · saldo inicial " . money_br($balance));
                 flash_set('ok', 'Conta criada.');
             }
@@ -141,16 +197,30 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
 <div class="grid grid-2">
   <div class="stack">
     <?php foreach ($accounts as $i => $a): ?>
+      <?php
+        $originCode = (string) ($a['resourceOrigin'] ?? '');
+        $originLabel = $originCode !== ''
+          ? ElectoralRules::bankOriginLabel($originCode)
+          : '';
+      ?>
       <div class="panel">
         <div class="row-actions" style="justify-content:space-between">
           <div>
             <div class="muted">Conta <?= $i + 1 ?></div>
             <div class="display"><?= e($a['label']) ?></div>
           </div>
-          <span class="badge <?= $a['active'] ? 'badge-ok' : 'badge-warn' ?>"><?= $a['active'] ? 'Ativa' : 'Inativa' ?></span>
+          <div class="row-actions" style="gap:.35rem;flex-wrap:wrap;justify-content:flex-end">
+            <?php if ($originLabel !== ''): ?>
+              <span class="badge badge-info"><?= e($originLabel) ?></span>
+            <?php endif; ?>
+            <span class="badge <?= $a['active'] ? 'badge-ok' : 'badge-warn' ?>"><?= $a['active'] ? 'Ativa' : 'Inativa' ?></span>
+          </div>
         </div>
         <div class="muted"><?= e($a['bankName']) ?> (<?= e($a['bankCode']) ?>)</div>
         <div>Ag <?= e($a['agency']) ?> · Cc <?= e($a['accountNumber']) ?> · <?= e($a['accountType']) ?></div>
+        <?php if (!empty($a['openedAt'])): ?>
+          <div class="muted" style="margin-top:.25rem;font-size:.8rem">Abertura: <?= e(date_br(substr((string) $a['openedAt'], 0, 10))) ?></div>
+        <?php endif; ?>
         <?php
           $who = [];
           if (!empty($a['depositCpf'])) {
@@ -212,12 +282,44 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
         <?php endif; ?>
       </div>
       <?php
+        $selOrigin = request_method() === 'POST'
+          ? (string) post('resourceOrigin', '')
+          : (string) ($edit['resourceOrigin'] ?? '');
+        $openedVal = request_method() === 'POST'
+          ? (string) post('openedAt', '')
+          : (!empty($edit['openedAt']) ? substr((string) $edit['openedAt'], 0, 10) : '');
+      ?>
+      <div class="grid grid-2">
+        <div class="field">
+          <label class="label">Fonte do recurso (Conta+JE)</label>
+          <select class="select" name="resourceOrigin">
+            <option value="">— selecionar —</option>
+            <?php foreach (BANK_RESOURCE_ORIGINS as $code => $lab): ?>
+              <option value="<?= e($code) ?>" <?= $selOrigin === $code ? 'selected' : '' ?>><?= e($lab) ?></option>
+            <?php endforeach; ?>
+          </select>
+          <div class="muted" style="font-size:.78rem;margin-top:.3rem">
+            Conta+JE §7.5: cada conta deve indicar a fonte — Fundo Partidário, Doações para Campanha ou FEFC.
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Data de abertura</label>
+          <input class="input" type="date" name="openedAt" max="<?= e((new DateTimeImmutable('today'))->format('Y-m-d')) ?>" value="<?= e($openedVal) ?>">
+          <div class="muted" style="font-size:.78rem;margin-top:.3rem">Não pode ser data futura.</div>
+        </div>
+      </div>
+      <?php
         $checkCpf = request_method() === 'POST'
           ? (bool) post('depositCpf')
           : ($edit ? !empty($edit['depositCpf']) : true);
         $checkCnpj = request_method() === 'POST'
           ? (bool) post('depositCnpj')
           : ($edit ? !empty($edit['depositCnpj']) : true);
+        if (request_method() !== 'POST' && !$edit && $selOrigin !== '') {
+            $flags = ElectoralRules::depositFlagsForOrigin($selOrigin);
+            $checkCpf = $flags['cpf'];
+            $checkCnpj = $flags['cnpj'];
+        }
       ?>
       <div class="field deposit-who">
         <label class="label">Quem pode depositar nessa Conta</label>
@@ -231,7 +333,7 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
             <span>CNPJ</span>
           </label>
         </div>
-        <div class="muted" style="font-size:.78rem;margin-top:.3rem">Indica quem pode realizar depósito de receita nesta conta.</div>
+        <div class="muted" style="font-size:.78rem;margin-top:.3rem">Indica quem pode realizar depósito de receita nesta conta. A fonte do recurso sugere CPF (Doações) ou CNPJ (Fundo Partidário / FEFC).</div>
       </div>
       <div class="row-actions">
         <button class="btn btn-primary" type="submit">Salvar</button>

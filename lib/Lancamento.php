@@ -65,7 +65,14 @@ final class Lancamento
             'VEICULOS' => 3, 'COMBUSTIVEIS' => 3, 'CABOS_ELEITORAIS' => 1,
         ];
         $revenueDefaults = [
-            'DOADOR_PF' => 0, 'FUNDO_PARTIDARIO' => 1, 'VAQUINHA_ELEITORAL' => 2,
+            'RECURSOS_PF' => 0,
+            'RECURSOS_PROPRIOS' => 0,
+            'FUNDO_PARTIDARIO' => 1,
+            'FEFC' => 2,
+            'FCC' => 0,
+            'RECURSOS_PARTIDO' => 1,
+            'RECURSOS_OUTROS_CANDIDATOS' => 0,
+            'RONI' => 0,
         ];
 
         $items = [];
@@ -74,6 +81,9 @@ final class Lancamento
             $items[] = ['kind' => 'EXPENSE_CATEGORY', 'code' => $code, 'bankAccountId' => $a($idx)];
         }
         foreach ($revenueDefaults as $code => $idx) {
+            if (!isset(REVENUE_SOURCES[$code])) {
+                continue;
+            }
             $items[] = ['kind' => 'REVENUE_SOURCE', 'code' => $code, 'bankAccountId' => $a($idx)];
         }
         self::upsertMappings($campaignId, $items);
@@ -186,37 +196,82 @@ final class Lancamento
             }
         }
 
-        // Fonte do gráfico: conta vinculada (Fundo/Vaquinha) tem prioridade sobre CPF/CNPJ.
+        // Fonte Conta+JE: origem da conta bancária tem prioridade; depois vínculos; depois documento.
         $source = self::resolveRevenueSource(
             $pdo,
             (string) $campaign['id'],
             (string) $account['id'],
             (string) ($account['label'] ?? ''),
-            $docType
+            $docType,
+            (string) ($account['resourceOrigin'] ?? ''),
+            (string) ($input['source'] ?? '')
         );
-        // Deputado estadual: não há doação de pessoa jurídica (CNPJ só em Fundo/Vaquinha).
-        if ($source === 'DOADOR_PJ') {
+        // Deputado estadual: doação direta de PJ só é válida em contas de Fundo/FEFC/partido.
+        if ($source === 'DOADOR_PJ' || ($docType === 'CNPJ' && in_array($source, ['RECURSOS_PF', 'RECURSOS_PROPRIOS'], true))) {
             return [
                 'ok' => false,
-                'error' => 'Não é permitido receber doação de pessoa jurídica. Use CPF (doador PF) ou uma conta vinculada a Fundo Partidário / Vaquinha.',
+                'error' => 'Não é permitido receber doação direta de pessoa jurídica nesta conta. Use conta de Fundo Partidário / FEFC ou registre como Recursos de Partido Político.',
             ];
         }
 
-        $description = trim((string) ($input['description'] ?? '')) ?: REVENUE_SOURCES[$source];
+        $donationType = (string) ($input['donationType'] ?? '');
+        if ($donationType === '' || !isset(ElectoralRules::DONATION_TYPES[$donationType])) {
+            $donationType = match ($source) {
+                'RECURSOS_PROPRIOS' => 'RECURSOS_PROPRIOS',
+                'RECURSOS_PARTIDO', 'FUNDO_PARTIDARIO', 'FEFC' => 'RECURSOS_PARTIDO',
+                'RECURSOS_OUTROS_CANDIDATOS' => 'RECURSOS_OUTROS_CANDIDATOS',
+                'RONI' => 'RONI',
+                default => 'RECURSOS_PF',
+            };
+        }
+        $resourceSpecies = strtoupper(trim((string) ($input['resourceSpecies'] ?? '')));
+        if ($resourceSpecies !== '' && !isset(RESOURCE_SPECIES[$resourceSpecies])) {
+            $resourceSpecies = '';
+        }
+        $resourceOrigin = (string) ($account['resourceOrigin'] ?? '');
+        if ($resourceOrigin === '' && in_array($source, ['FUNDO_PARTIDARIO', 'FEFC'], true)) {
+            $resourceOrigin = $source;
+        }
+        $emitReceipt = !empty($input['emitReceipt']) ? 1 : 0;
+        $isFcc = !empty($input['isFcc']) || $source === 'FCC' ? 1 : 0;
+        $isInternet = !empty($input['isInternet']) ? 1 : 0;
+        $isLoan = !empty($input['isLoan']) ? 1 : 0;
+        if ($isFcc) {
+            $source = 'FCC';
+        }
+
+        $description = trim((string) ($input['description'] ?? '')) ?: (REVENUE_SOURCES[$source] ?? 'Receita');
         $now = now_sql();
         $revenueId = cuid();
         $txId = cuid();
+        $receiptNumber = $input['receiptNumber'] ?? null;
+        if ($emitReceipt && ($receiptNumber === null || trim((string) $receiptNumber) === '')) {
+            $receiptNumber = self::nextElectoralReceipt($pdo, (string) $campaign['id']);
+        }
 
         try {
             $pdo->beginTransaction();
-            $pdo->prepare(
-                'INSERT INTO `Revenue` (id, campaignId, source, donorName, donorCpf, amount, date, description, receiptNumber, bankAccountId, createdById, createdAt, updatedAt)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
-            )->execute([
-                $revenueId, $campaign['id'], $source,
-                $donorName, $donorDoc, $amount, $date, $description,
-                $input['receiptNumber'] ?? null, $account['id'], $userId, $now, $now,
-            ]);
+            $hasExtra = self::revenueHasElectoralColumns($pdo);
+            if ($hasExtra) {
+                $pdo->prepare(
+                    'INSERT INTO `Revenue` (id, campaignId, source, donationType, resourceOrigin, resourceSpecies, emitReceipt, isFcc, isInternet, isLoan, donorName, donorCpf, amount, date, description, receiptNumber, bankAccountId, createdById, createdAt, updatedAt)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                )->execute([
+                    $revenueId, $campaign['id'], $source, $donationType, $resourceOrigin ?: null, $resourceSpecies ?: null,
+                    $emitReceipt, $isFcc, $isInternet, $isLoan,
+                    $donorName, $donorDoc, $amount, $date, $description,
+                    $receiptNumber, $account['id'], $userId, $now, $now,
+                ]);
+            } else {
+                $pdo->prepare(
+                    'INSERT INTO `Revenue` (id, campaignId, source, donorName, donorCpf, amount, date, description, receiptNumber, bankAccountId, createdById, createdAt, updatedAt)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                )->execute([
+                    $revenueId, $campaign['id'], $source,
+                    $donorName, $donorDoc, $amount, $date, $description,
+                    $receiptNumber, $account['id'], $userId, $now, $now,
+                ]);
+            }
 
             $pdo->prepare('UPDATE `BankAccount` SET balance = balance + ?, updatedAt = ? WHERE id = ?')
                 ->execute([$amount, $now, $account['id']]);
@@ -226,7 +281,7 @@ final class Lancamento
                  VALUES (?,?,?,?,?,?,?,?,?,?,?)'
             )->execute([
                 $txId, $account['id'], $date, "Crédito — {$description}", $amount, 'CREDITO',
-                $input['receiptNumber'] ?? null, 'PENDENTE', $revenueId, $now, $now,
+                $receiptNumber, 'PENDENTE', $revenueId, $now, $now,
             ]);
 
             audit_log(
@@ -234,7 +289,7 @@ final class Lancamento
                 'LAUNCH',
                 'Revenue',
                 $revenueId,
-                sprintf('Receita %s R$ %.2f → %s · conciliação %s', REVENUE_SOURCES[$source], $amount, $account['label'], substr($txId, -6))
+                sprintf('Receita %s R$ %.2f → %s · conciliação %s', REVENUE_SOURCES[$source] ?? $source, $amount, $account['label'], substr($txId, -6))
             );
 
             $pdo->commit();
@@ -248,18 +303,55 @@ final class Lancamento
         return ['ok' => true, 'data' => ['kind' => 'RECEITA', 'id' => $revenueId]];
     }
 
+    private static function revenueHasElectoralColumns(PDO $pdo): bool
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+        try {
+            $st = $pdo->query("SHOW COLUMNS FROM `Revenue` LIKE 'donationType'");
+            $cached = (bool) $st->fetch();
+        } catch (Throwable) {
+            $cached = false;
+        }
+        return $cached;
+    }
+
+    private static function nextElectoralReceipt(PDO $pdo, string $campaignId): string
+    {
+        try {
+            $st = $pdo->prepare(
+                "SELECT COUNT(*) AS c FROM `Revenue` WHERE campaignId=? AND emitReceipt=1 AND receiptNumber IS NOT NULL AND receiptNumber<>''"
+            );
+            $st->execute([$campaignId]);
+            $n = (int) $st->fetch()['c'] + 1;
+        } catch (Throwable) {
+            $st = $pdo->prepare('SELECT COUNT(*) AS c FROM `Revenue` WHERE campaignId=? AND receiptNumber IS NOT NULL AND receiptNumber<>\'\'');
+            $st->execute([$campaignId]);
+            $n = (int) $st->fetch()['c'] + 1;
+        }
+        return sprintf('RE-%s-%04d', ELECTION_YEAR, $n);
+    }
+
     /**
-     * Classifica a receita para o dashboard (Receitas por fonte).
-     * Se a conta estiver vinculada a Fundo Partidário ou Vaquinha, usa essa fonte —
-     * mesmo quando o depósito veio com CPF/CNPJ do doador.
+     * Classifica a receita para o dashboard (Receitas por fonte) — Conta+JE.
      */
     public static function resolveRevenueSource(
         PDO $pdo,
         string $campaignId,
         string $bankAccountId,
         string $accountLabel,
-        string $docType
+        string $docType,
+        string $resourceOrigin = '',
+        string $explicitSource = ''
     ): string {
+        if ($explicitSource !== '' && isset(REVENUE_SOURCES[$explicitSource])) {
+            return $explicitSource;
+        }
+        if ($resourceOrigin !== '') {
+            return ElectoralRules::revenueSourceFromBankOrigin($resourceOrigin, $docType);
+        }
         try {
             $st = $pdo->prepare(
                 "SELECT code FROM `AccountMapping`
@@ -267,25 +359,26 @@ final class Lancamento
             );
             $st->execute([$campaignId, $bankAccountId]);
             $codes = $st->fetchAll(PDO::FETCH_COLUMN);
-            if (in_array('FUNDO_PARTIDARIO', $codes, true)) {
-                return 'FUNDO_PARTIDARIO';
-            }
-            if (in_array('VAQUINHA_ELEITORAL', $codes, true)) {
-                return 'VAQUINHA_ELEITORAL';
+            foreach (['FEFC', 'FUNDO_PARTIDARIO', 'FCC', 'RECURSOS_PARTIDO', 'RECURSOS_PF', 'VAQUINHA_ELEITORAL'] as $prefer) {
+                if (in_array($prefer, $codes, true)) {
+                    return $prefer === 'VAQUINHA_ELEITORAL' ? 'FCC' : $prefer;
+                }
             }
         } catch (Throwable) {
-            // segue para fallback por nome / documento
         }
 
         $label = mb_strtolower($accountLabel);
-        if ($label !== '' && (str_contains($label, 'vaquinha') || str_contains($label, 'vakinha'))) {
-            return 'VAQUINHA_ELEITORAL';
+        if ($label !== '' && (str_contains($label, 'vaquinha') || str_contains($label, 'vakinha') || str_contains($label, 'fcc'))) {
+            return 'FCC';
+        }
+        if ($label !== '' && str_contains($label, 'fefc')) {
+            return 'FEFC';
         }
         if ($label !== '' && str_contains($label, 'fundo')) {
             return 'FUNDO_PARTIDARIO';
         }
 
-        return $docType === 'CNPJ' ? 'DOADOR_PJ' : 'DOADOR_PF';
+        return $docType === 'CNPJ' ? 'RECURSOS_PARTIDO' : 'RECURSOS_PF';
     }
 
     private static function createDespesa(PDO $pdo, array $campaign, array $account, array $input, string $userId, float $amount, string $date): array

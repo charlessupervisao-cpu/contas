@@ -13,6 +13,49 @@ const APP_VENDOR_TAGLINE = 'Soluções Digitais Inteligentes';
 const VEHICLE_FUEL_LIMIT_RATIO = 0.2;
 const MAX_BANK_ACCOUNTS = 4;
 
+/** Fontes oficiais das contas bancárias de campanha (Conta+JE §7.5). */
+const BANK_RESOURCE_ORIGINS = [
+    'DOACOES_CAMPANHA' => 'Doações para Campanha',
+    'FUNDO_PARTIDARIO' => 'Fundo Partidário',
+    'FEFC' => 'Fundo Especial de Financiamento de Campanha (FEFC)',
+];
+
+/**
+ * Fontes / tipos de receita alinhados ao Conta+JE §8 (Lei 9.504/97 · Res.-TSE 23.607/2019).
+ * Códigos legados (DOADOR_PF, VAQUINHA_ELEITORAL) são migrados em Schema::ensure.
+ */
+const REVENUE_SOURCES = [
+    'RECURSOS_PROPRIOS' => 'Recursos Próprios',
+    'RECURSOS_PF' => 'Recursos de Pessoas Físicas',
+    'FUNDO_PARTIDARIO' => 'Fundo Partidário',
+    'FEFC' => 'Fundo Especial de Financiamento de Campanha (FEFC)',
+    'RECURSOS_PARTIDO' => 'Recursos de Partido Político',
+    'RECURSOS_OUTROS_CANDIDATOS' => 'Recursos de Outros Candidatos',
+    'FCC' => 'Financiamento Coletivo de Campanha (FCC)',
+    'RONI' => 'Recursos de Origens Não Identificadas (RONI)',
+];
+
+const RESOURCE_SPECIES = [
+    'BOLETO' => 'Boleto de Cobrança',
+    'CARTAO_CREDITO' => 'Cartão de Crédito',
+    'CARTAO_DEBITO' => 'Cartão de Débito',
+    'CHEQUE' => 'Cheque',
+    'PIX' => 'PIX',
+    'TRANSFERENCIA' => 'Transferência Eletrônica',
+    'ESPECIE' => 'Em Espécie',
+    'ESTIMAVEL' => 'Estimável em Dinheiro',
+    'OUTROS' => 'Outros títulos de crédito',
+];
+
+const REPRESENTATIVE_ROLES = [
+    'ADMIN_FINANCEIRO' => 'Administrador(a) financeiro(a)',
+    'ADVOGADO' => 'Advogado(a)',
+    'CONTABILISTA' => 'Contabilista',
+    'PRESIDENTE' => 'Presidente',
+    'TESOUREIRO' => 'Tesoureiro(a)',
+    'OUTROS' => 'Outros representantes',
+];
+
 const ROLES = [
     'MASTER' => 'MASTER',
     'FINANCEIRO' => 'FINANCEIRO',
@@ -27,8 +70,22 @@ const ROLE_LABELS = [
     'CONSULTA' => 'Consulta (leitura)',
 ];
 
-/** Semente inicial da tabela ExpenseCategory (não usar direto nas telas). */
+/** Semente inicial da tabela ExpenseCategory (Conta+JE §9.1 + categorias operacionais). */
 const DEFAULT_EXPENSE_CATEGORIES = [
+    'SERVICOS_ADVOCATICIOS' => 'Serviços advocatícios',
+    'SERVICOS_CONTABEIS' => 'Serviços contábeis',
+    'PESSOAL_MILITANCIA' => 'Pessoal, militância e mobilização',
+    'COMBUSTIVEIS_TRANSPORTE' => 'Combustíveis, transporte e deslocamento',
+    'PUBLICIDADE_GRAFICA' => 'Publicidade e materiais impressos',
+    'INTERNET_IMPULSIONAMENTO' => 'Internet e impulsionamento',
+    'LOCACAO_BENS_VEICULOS' => 'Locação/cessão de bens e veículos',
+    'COMICIOS_EVENTOS' => 'Comícios, eventos, gerador e carro de som',
+    'AGUA_ENERGIA_CORREIOS' => 'Água, energia e correspondências',
+    'ENCARGOS_TAXAS' => 'Encargos, taxas, impostos e multas',
+    'PASSAGENS_AEREAS' => 'Passagens aéreas',
+    'AQUISICAO_BENS' => 'Aquisição/doação de bens móveis ou imóveis',
+    'DOACAO_OUTRAS_CANDIDATURAS' => 'Doações a candidatas, candidatos e partidos',
+    'DESPESAS_DIVERSAS' => 'Despesas diversas a especificar',
     'COMITE' => 'Comitê',
     'GRAFICA' => 'Gráfica',
     'INTERNET' => 'Internet',
@@ -40,6 +97,20 @@ const DEFAULT_EXPENSE_CATEGORIES = [
 ];
 
 const DEFAULT_EXPENSE_CATEGORY_COLORS = [
+    'SERVICOS_ADVOCATICIOS' => '#1D4ED8',
+    'SERVICOS_CONTABEIS' => '#0369A1',
+    'PESSOAL_MILITANCIA' => '#16A34A',
+    'COMBUSTIVEIS_TRANSPORTE' => '#CA8A04',
+    'PUBLICIDADE_GRAFICA' => '#0284C7',
+    'INTERNET_IMPULSIONAMENTO' => '#4F46E5',
+    'LOCACAO_BENS_VEICULOS' => '#EA580C',
+    'COMICIOS_EVENTOS' => '#DB2777',
+    'AGUA_ENERGIA_CORREIOS' => '#0D9488',
+    'ENCARGOS_TAXAS' => '#BE123C',
+    'PASSAGENS_AEREAS' => '#7C3AED',
+    'AQUISICAO_BENS' => '#0891B2',
+    'DOACAO_OUTRAS_CANDIDATURAS' => '#9333EA',
+    'DESPESAS_DIVERSAS' => '#64748B',
     'COMITE' => '#0D9488',
     'GRAFICA' => '#0284C7',
     'INTERNET' => '#4F46E5',
@@ -79,13 +150,6 @@ const DEFAULT_TEAM_PROFILES = [
     'RICARDO_ALVES' => ['phone' => '(61) 98888-1008', 'city' => 'Luziânia', 'cityRegion' => 'Parque Estrela Dalva'],
 ];
 
-const REVENUE_SOURCES = [
-    'DOADOR_PF' => 'Doador Pessoa Física',
-    'DOADOR_PJ' => 'Doador Pessoa Jurídica',
-    'FUNDO_PARTIDARIO' => 'Fundo Partidário',
-    'VAQUINHA_ELEITORAL' => 'Vaquinha Eleitoral',
-];
-
 /** Status de despesa (caixa x compromisso orçamentário). */
 const EXPENSE_STATUSES = [
     'PAGA' => 'Paga',
@@ -117,9 +181,16 @@ const VEHICLE_TYPES = [
 ];
 
 const REVENUE_SOURCE_COLORS = [
+    'RECURSOS_PROPRIOS' => '#0F766E',
+    'RECURSOS_PF' => '#0D9488',
+    'FUNDO_PARTIDARIO' => '#0284C7',
+    'FEFC' => '#1D4ED8',
+    'RECURSOS_PARTIDO' => '#7C3AED',
+    'RECURSOS_OUTROS_CANDIDATOS' => '#C026D3',
+    'FCC' => '#CA8A04',
+    'RONI' => '#BE123C',
     'DOADOR_PF' => '#0D9488',
     'DOADOR_PJ' => '#7C3AED',
-    'FUNDO_PARTIDARIO' => '#0284C7',
     'VAQUINHA_ELEITORAL' => '#CA8A04',
 ];
 
@@ -135,12 +206,14 @@ const MODULES = [
     ['id' => 'despesas', 'label' => 'Despesas', 'href' => '/admin/despesas.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary', 'shortcut' => 'D', 'fkey' => 'F3'],
     ['id' => 'contas-pendentes', 'label' => 'Contas pendentes', 'href' => '/admin/contas-pendentes.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary'],
     ['id' => 'lancamento', 'label' => 'Novo lançamento', 'href' => '/admin/lancamento.php', 'roles' => ['MASTER'], 'group' => 'primary', 'shortcut' => 'L'],
+    ['id' => 'inconsistencias', 'label' => 'Verificar inconsistências', 'href' => '/admin/inconsistencias.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary'],
     // Bloco operacional
     ['id' => 'conciliacao', 'label' => 'Conciliação', 'href' => '/admin/conciliacao.php', 'roles' => ['MASTER', 'FINANCEIRO'], 'group' => 'ops'],
     ['id' => 'fornecedores', 'label' => 'Fornecedores', 'href' => '/admin/fornecedores.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'ops'],
     // Configurações (acordeão) — Manual primeiro para fácil acesso
     ['id' => 'manual', 'label' => 'MANUAL DE USO', 'href' => '/admin/manual.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'config'],
     ['id' => 'contas', 'label' => 'Contas bancárias', 'href' => '/admin/contas.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'config'],
+    ['id' => 'representantes', 'label' => 'Representantes legais', 'href' => '/admin/representantes.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'config'],
     ['id' => 'categorias', 'label' => 'Categorias de despesa', 'href' => '/admin/categorias.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'config'],
     ['id' => 'equipes', 'label' => 'Equipes', 'href' => '/admin/equipes.php', 'roles' => ['MASTER', 'RH', 'CONSULTA'], 'group' => 'config'],
     ['id' => 'veiculos', 'label' => 'Veículos', 'href' => '/admin/veiculos.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'config'],
@@ -158,9 +231,11 @@ const VIEW_ROLES = [
     'receitas' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
     'despesas' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
     'contas-pendentes' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
+    'inconsistencias' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
     'cabos' => ['MASTER', 'RH', 'CONSULTA'],
     'equipes' => ['MASTER', 'RH', 'CONSULTA'],
     'contas' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
+    'representantes' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'],
     'categorias' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
     'conciliacao' => ['MASTER', 'FINANCEIRO'],
     'veiculos' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
