@@ -24,6 +24,7 @@ require_once $ROOT . '/lib/Metrics.php';
 require_once $ROOT . '/lib/Demo.php';
 require_once $ROOT . '/lib/PhotoUpload.php';
 require_once $ROOT . '/lib/ContractPdfUpload.php';
+require_once $ROOT . '/lib/DocumentProofUpload.php';
 require_once $ROOT . '/lib/Schema.php';
 require_once $ROOT . '/lib/TseFornecedores.php';
 require_once $ROOT . '/lib/TseNfeCsv.php';

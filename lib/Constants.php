@@ -4,7 +4,7 @@ declare(strict_types=1);
 const APP_NAME = 'CONTAS';
 const APP_TAGLINE = 'Prestação de contas para políticos';
 /** Build publicada no deploy — use para confirmar se o cPanel está atualizado */
-const APP_BUILD = '2026.08.14-config-seq';
+const APP_BUILD = '2026.08.14-contamaisje-gaps';
 const ELECTION_YEAR = 2026;
 /** Fim da janela do demonstrativo / 1º turno (GO 2026) */
 const CAMPAIGN_END_DATE = '2026-10-04';
@@ -224,6 +224,8 @@ const MODULES = [
     ['id' => 'receitas', 'label' => 'Doações recebidas', 'href' => '/admin/receitas.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary', 'shortcut' => 'R', 'fkey' => 'F2'],
     ['id' => 'despesas', 'label' => 'Despesas efetuadas', 'href' => '/admin/despesas.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary', 'shortcut' => 'D', 'fkey' => 'F3'],
     ['id' => 'movimentacoes', 'label' => 'Movimentação financeira', 'href' => '/admin/movimentacoes.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary', 'shortcut' => 'M'],
+    ['id' => 'fundo-caixa', 'label' => 'Fundo de caixa', 'href' => '/admin/fundo-caixa.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary'],
+    ['id' => 'transferencias', 'label' => 'Transferência entre contas', 'href' => '/admin/transferencias.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary'],
     ['id' => 'contas-pendentes', 'label' => 'Despesas não pagas', 'href' => '/admin/contas-pendentes.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary'],
     ['id' => 'inconsistencias', 'label' => 'Verificar inconsistências', 'href' => '/admin/inconsistencias.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary'],
     ['id' => 'relatorios', 'label' => 'Relatórios e recibos', 'href' => '/admin/relatorios.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'primary'],
@@ -250,6 +252,8 @@ const MODULES = [
 const VIEW_ROLES = [
     'dashboard' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'],
     'movimentacoes' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
+    'fundo-caixa' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
+    'transferencias' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
     'receitas' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
     'despesas' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],
     'contas-pendentes' => ['MASTER', 'FINANCEIRO', 'CONSULTA'],

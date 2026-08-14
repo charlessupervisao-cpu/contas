@@ -61,10 +61,11 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
   <div class="panel je-section">
     <div class="je-section-title">1. Conferência preventiva</div>
     <ul class="muted" style="margin:0;padding-left:1.1rem;line-height:1.55">
-      <li>Qualificação do prestador (endereço e contatos)</li>
+      <li>Qualificação do prestador (CPF, endereço e contatos)</li>
       <li>Representantes (advogado OAB + contabilista CRC)</li>
-      <li>Contas Doações / FEFC / Fundo Partidário (RAC, 10 dias)</li>
-      <li>Doações e despesas com espécie/pagamento/NF</li>
+      <li>Contas Doações / FEFC / Fundo Partidário (RAC, extrato PDF)</li>
+      <li>Doações (espécie, originários §8.8) e despesas (pagamento §9.3, comprovante)</li>
+      <li>Fundo de caixa e transferências entre contas (§10)</li>
       <li>Recibos eleitorais e inconsistências</li>
     </ul>
     <div class="row-actions" style="margin-top:.85rem;flex-wrap:wrap;gap:.4rem">
@@ -89,8 +90,9 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
 <div class="panel je-section" style="margin-top:1rem">
   <div class="je-section-title">3. Pacote de envio ao Conta+JE / TSE</div>
   <p class="muted" style="line-height:1.45">
-    Gera um ZIP com CSVs nomeados como no Conta+JE (qualificação, representantes, contas,
-    doações, despesas, recibos, demonstrativo, inconsistências) + manifesto JSON e instruções.
+    Gera um ZIP com CSVs 01–12 (qualificação, representantes, contas, doações, despesas,
+    recibos, demonstrativo, inconsistências, doadores originários, fundo de caixa, transferências),
+    pasta <code>comprovantes/</code> com PDFs anexados e manifesto JSON com instruções.
   </p>
   <?php if (count($imped) > 0): ?>
     <div class="alert alert-warn">Há <?= count($imped) ?> inconsistência(s) impeditiva(s). Corrija antes da entrega oficial.</div>

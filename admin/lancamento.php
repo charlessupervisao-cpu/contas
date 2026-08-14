@@ -45,6 +45,8 @@ if (request_method() === 'POST') {
         'receiptNumber' => (string) post('receiptNumber', ''),
         'donationType' => (string) post('donationType', ''),
         'resourceSpecies' => (string) post('resourceSpecies', ''),
+        'speciesRef' => (string) post('speciesRef', ''),
+        'speciesBank' => (string) post('speciesBank', ''),
         'source' => (string) post('source', ''),
         'emitReceipt' => post('emitReceipt') ? '1' : '',
         'isFcc' => post('isFcc') ? '1' : '',
@@ -56,6 +58,8 @@ if (request_method() === 'POST') {
         'naturezaOp' => (string) post('naturezaOp', ''),
         'dataEmissao' => (string) post('dataEmissao', ''),
         'numeroNf' => (string) post('numeroNf', ''),
+        'docSpecies' => (string) post('docSpecies', ''),
+        'docNumber' => (string) post('docNumber', ''),
         'paymentMethod' => (string) post('paymentMethod', ''),
         'paymentDate' => (string) post('paymentDate', ''),
         'paymentResourceOrigin' => (string) post('paymentResourceOrigin', ''),
@@ -81,16 +85,22 @@ if (request_method() === 'POST') {
         'receiptNumber' => post('receiptNumber'),
         'donationType' => post('donationType'),
         'resourceSpecies' => post('resourceSpecies'),
+        'speciesRef' => post('speciesRef'),
+        'speciesBank' => post('speciesBank'),
         'source' => post('source'),
         'emitReceipt' => post('emitReceipt'),
         'isFcc' => post('isFcc'),
         'isInternet' => post('isInternet'),
         'isLoan' => post('isLoan'),
+        'originDonors' => $_POST['originDonors'] ?? [],
+        '_proofFile' => $_FILES['proofPdf'] ?? null,
         'category' => $category,
         'supplierId' => post('supplierId') ?: null,
         'naturezaOp' => post('naturezaOp'),
         'dataEmissao' => post('dataEmissao'),
         'numeroNf' => post('numeroNf'),
+        'docSpecies' => post('docSpecies'),
+        'docNumber' => post('docNumber'),
         'paymentMethod' => post('paymentMethod'),
         'paymentDate' => post('paymentDate'),
         'paymentResourceOrigin' => post('paymentResourceOrigin'),
@@ -165,7 +175,7 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
     }
   ?>
 
-  <form method="post" data-mask-form data-lancamento-form novalidate>
+  <form method="post" enctype="multipart/form-data" data-mask-form data-lancamento-form novalidate>
     <input type="hidden" name="donorDocType" value="<?= e($oldDocType) ?>" data-donor-doc-type-value>
     <div class="field row-actions">
       <label><input type="radio" name="kind" value="RECEITA" data-kind-toggle <?= $tipo === 'RECEITA' ? 'checked' : '' ?>> Receita</label>
@@ -314,13 +324,23 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
           </select>
         </div>
         <div class="field">
-          <label class="label">Espécie do recurso</label>
-          <select class="select" name="resourceSpecies">
+          <label class="label req">Espécie do recurso</label>
+          <select class="select" name="resourceSpecies" required>
             <option value="">— selecionar —</option>
             <?php foreach (RESOURCE_SPECIES as $code => $lab): ?>
               <option value="<?= e($code) ?>" <?= $val('resourceSpecies') === $code ? 'selected' : '' ?>><?= e($lab) ?></option>
             <?php endforeach; ?>
           </select>
+        </div>
+      </div>
+      <div class="grid grid-2">
+        <div class="field">
+          <label class="label">Identificador da espécie (PIX / cheque / boleto)</label>
+          <input class="input" name="speciesRef" value="<?= e($val('speciesRef')) ?>" placeholder="Ex.: E2E PIX, nº cheque, autorização">
+        </div>
+        <div class="field">
+          <label class="label">Banco da espécie (se cheque/TED)</label>
+          <input class="input" name="speciesBank" value="<?= e($val('speciesBank')) ?>" placeholder="Nome ou código do banco">
         </div>
       </div>
       <div class="field">
@@ -342,6 +362,47 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
         <label class="label">Nº recibo eleitoral</label>
         <input class="input" name="receiptNumber" value="<?= e($val('receiptNumber')) ?>" placeholder="Automático se marcar emissão">
         <div class="muted" style="font-size:.78rem;margin-top:.25rem">Conta+JE §8.9 — para candidata/candidato a numeração é sequencial.</div>
+      </div>
+
+      <div class="panel nfe-launch-box" data-origin-donors>
+        <strong class="nfe-launch-title">Doadoras e doadores originários (Conta+JE §8.8)</strong>
+        <p class="muted" style="margin:.2rem 0 .55rem;font-size:.8rem;line-height:1.4">
+          Obrigatório quando a fonte for <em>Doações para Campanha</em> em Recursos de Partido / Outros Candidatos.
+          O total deve bater com o valor da doação.
+        </p>
+        <div class="stack" style="gap:.55rem">
+          <?php for ($oi = 0; $oi < 3; $oi++): ?>
+            <div class="grid grid-2">
+              <div class="field" style="margin:0">
+                <label class="label">CPF originário <?= $oi + 1 ?></label>
+                <input class="input" name="originDonors[cpf][]" data-mask="cpf" inputmode="numeric" placeholder="000.000.000-00">
+              </div>
+              <div class="field" style="margin:0">
+                <label class="label">Nome</label>
+                <input class="input" name="originDonors[name][]" placeholder="Nome completo">
+              </div>
+              <div class="field" style="margin:0">
+                <label class="label">Valor (R$)</label>
+                <input class="input" name="originDonors[amount][]" data-mask="money" inputmode="decimal" placeholder="0,00">
+              </div>
+              <div class="field" style="margin:0">
+                <label class="label">Espécie</label>
+                <select class="select" name="originDonors[species][]">
+                  <option value="">—</option>
+                  <?php foreach (RESOURCE_SPECIES as $code => $lab): ?>
+                    <option value="<?= e($code) ?>"><?= e($lab) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+            </div>
+          <?php endfor; ?>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Comprovante PDF (Conta+JE §8.10)</label>
+        <input class="input" type="file" name="proofPdf" accept="application/pdf,.pdf">
+        <div class="muted" style="font-size:.78rem;margin-top:.25rem">PDF até 10 MB — incluso no pacote de entrega ao Conta+JE.</div>
       </div>
     </div>
 
@@ -381,11 +442,25 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
       </div>
 
       <div class="panel nfe-launch-box">
+        <strong class="nfe-launch-title">Documento fiscal (Conta+JE §9)</strong>
+        <div class="grid grid-2">
+          <div class="field">
+            <label class="label">Espécie do documento</label>
+            <input class="input" name="docSpecies" value="<?= e($val('docSpecies')) ?>" placeholder="NF-e, cupom, recibo…">
+          </div>
+          <div class="field">
+            <label class="label">Nº do documento</label>
+            <input class="input" name="docNumber" value="<?= e($val('docNumber', $val('numeroNf'))) ?>" placeholder="Número da nota/recibo">
+          </div>
+        </div>
+      </div>
+
+      <div class="panel nfe-launch-box">
         <strong class="nfe-launch-title">Dados do pagamento (Conta+JE §9.3)</strong>
         <div class="grid grid-2">
           <div class="field">
             <label class="label req">Forma de pagamento</label>
-            <select class="select" name="paymentMethod">
+            <select class="select" name="paymentMethod" required>
               <option value="">— selecionar —</option>
               <?php foreach (PAYMENT_METHODS as $code => $lab): ?>
                 <option value="<?= e($code) ?>" <?= $val('paymentMethod') === $code ? 'selected' : '' ?>><?= e($lab) ?></option>
@@ -434,6 +509,12 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
             <input class="input" name="numeroNf" inputmode="numeric" value="<?= e($val('numeroNf')) ?>">
           </div>
         </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Comprovante PDF (Conta+JE §9)</label>
+        <input class="input" type="file" name="proofPdf" accept="application/pdf,.pdf">
+        <div class="muted" style="font-size:.78rem;margin-top:.25rem">PDF até 10 MB — incluso no pacote de entrega ao Conta+JE.</div>
       </div>
 
       <div class="grid grid-2">

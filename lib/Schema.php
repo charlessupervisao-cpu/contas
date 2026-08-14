@@ -291,6 +291,9 @@ final class Schema
                 'isFcc' => 'BOOLEAN NOT NULL DEFAULT false',
                 'isInternet' => 'BOOLEAN NOT NULL DEFAULT false',
                 'isLoan' => 'BOOLEAN NOT NULL DEFAULT false',
+                'speciesRef' => 'VARCHAR(191) NULL',
+                'speciesBank' => 'VARCHAR(191) NULL',
+                'proofPdfPath' => 'VARCHAR(255) NULL',
             ];
             foreach ($revCols as $name => $def) {
                 if (!self::columnExists($pdo, 'Revenue', $name)) {
@@ -306,10 +309,23 @@ final class Schema
                 'paymentResourceOrigin' => 'VARCHAR(64) NULL',
                 'quantity' => 'DOUBLE NULL',
                 'unitValue' => 'DOUBLE NULL',
+                'proofPdfPath' => 'VARCHAR(255) NULL',
+                'docSpecies' => 'VARCHAR(64) NULL',
+                'docNumber' => 'VARCHAR(191) NULL',
             ];
             foreach ($expCols as $name => $def) {
                 if (!self::columnExists($pdo, 'Expense', $name)) {
                     $pdo->exec("ALTER TABLE `Expense` ADD COLUMN `{$name}` {$def}");
+                }
+            }
+        }
+
+        if (self::tableExists($pdo, 'BankAccount')) {
+            foreach ([
+                'statementPdfPath' => 'VARCHAR(255) NULL',
+            ] as $col => $def) {
+                if (!self::columnExists($pdo, 'BankAccount', $col)) {
+                    $pdo->exec("ALTER TABLE `BankAccount` ADD COLUMN `{$col}` {$def}");
                 }
             }
         }
@@ -326,12 +342,71 @@ final class Schema
                 'addressDistrict' => 'VARCHAR(191) NULL',
                 'addressCity' => 'VARCHAR(191) NULL',
                 'addressState' => 'VARCHAR(8) NULL',
+                'candidateCpf' => 'VARCHAR(32) NULL',
             ];
             foreach ($campCols as $name => $def) {
                 if (!self::columnExists($pdo, 'Campaign', $name)) {
                     $pdo->exec("ALTER TABLE `Campaign` ADD COLUMN `{$name}` {$def}");
                 }
             }
+        }
+
+        if (!self::tableExists($pdo, 'RevenueOriginDonor')) {
+            $pdo->exec(
+                'CREATE TABLE `RevenueOriginDonor` (
+                    `id` VARCHAR(191) NOT NULL,
+                    `campaignId` VARCHAR(191) NOT NULL,
+                    `revenueId` VARCHAR(191) NOT NULL,
+                    `cpf` VARCHAR(32) NOT NULL,
+                    `name` VARCHAR(191) NOT NULL,
+                    `amount` DOUBLE NOT NULL DEFAULT 0,
+                    `resourceSpecies` VARCHAR(64) NULL,
+                    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+                    INDEX `RevenueOriginDonor_revenueId_idx`(`revenueId`),
+                    INDEX `RevenueOriginDonor_campaignId_idx`(`campaignId`),
+                    PRIMARY KEY (`id`)
+                ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+            );
+        }
+
+        if (!self::tableExists($pdo, 'CashFund')) {
+            $pdo->exec(
+                "CREATE TABLE `CashFund` (
+                    `id` VARCHAR(191) NOT NULL,
+                    `campaignId` VARCHAR(191) NOT NULL,
+                    `bankAccountId` VARCHAR(191) NULL,
+                    `kind` VARCHAR(32) NOT NULL DEFAULT 'CONSTITUICAO',
+                    `date` DATE NOT NULL,
+                    `amount` DOUBLE NOT NULL,
+                    `description` TEXT NULL,
+                    `proofPdfPath` VARCHAR(255) NULL,
+                    `createdById` VARCHAR(191) NULL,
+                    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+                    `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+                    INDEX `CashFund_campaignId_idx`(`campaignId`),
+                    PRIMARY KEY (`id`)
+                ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+            );
+        }
+
+        if (!self::tableExists($pdo, 'AccountTransfer')) {
+            $pdo->exec(
+                'CREATE TABLE `AccountTransfer` (
+                    `id` VARCHAR(191) NOT NULL,
+                    `campaignId` VARCHAR(191) NOT NULL,
+                    `fromAccountId` VARCHAR(191) NOT NULL,
+                    `toAccountId` VARCHAR(191) NOT NULL,
+                    `date` DATE NOT NULL,
+                    `amount` DOUBLE NOT NULL,
+                    `description` TEXT NULL,
+                    `proofPdfPath` VARCHAR(255) NULL,
+                    `createdById` VARCHAR(191) NULL,
+                    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+                    `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+                    INDEX `AccountTransfer_campaignId_idx`(`campaignId`),
+                    PRIMARY KEY (`id`)
+                ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+            );
         }
 
         if (!self::tableExists($pdo, 'Representative')) {

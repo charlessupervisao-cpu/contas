@@ -323,12 +323,14 @@ final class Reports
         $accounts = $campaign['bankAccounts'] ?? [];
         $rows = [
             ['Campo' => 'Candidato(a)', 'Valor' => (string) ($campaign['candidateName'] ?? '')],
+            ['Campo' => 'CPF', 'Valor' => (string) ($campaign['candidateCpf'] ?? '')],
             ['Campo' => 'Número', 'Valor' => (string) ($campaign['candidateNumber'] ?? '')],
             ['Campo' => 'Cargo', 'Valor' => (string) ($campaign['office'] ?? '')],
             ['Campo' => 'Partido', 'Valor' => trim((string) ($campaign['party'] ?? '') . ' / ' . (string) ($campaign['partyNumber'] ?? ''))],
             ['Campo' => 'UF', 'Valor' => (string) ($campaign['state'] ?? 'GO')],
             ['Campo' => 'Ano', 'Valor' => (string) ($campaign['electionYear'] ?? ELECTION_YEAR)],
             ['Campo' => 'CNPJ campanha', 'Valor' => (string) ($campaign['cnpjCampaign'] ?? '')],
+            ['Campo' => 'Título eleitoral', 'Valor' => (string) ($campaign['electoralTitle'] ?? '')],
             ['Campo' => 'Limite legal', 'Valor' => money_br((float) ($campaign['legalSpendLimit'] ?? 0))],
             ['Campo' => 'Orçamento', 'Valor' => money_br((float) ($campaign['totalBudget'] ?? 0))],
             ['Campo' => 'E-mail', 'Valor' => (string) ($campaign['email'] ?? '')],
@@ -522,15 +524,18 @@ final class Reports
                 'Doador' => (string) ($r['donorName'] ?? ''),
                 'CPF/CNPJ' => (string) ($r['donorCpf'] ?? ''),
                 'Espécie' => RESOURCE_SPECIES[$r['resourceSpecies'] ?? ''] ?? (string) ($r['resourceSpecies'] ?? '—'),
+                'Id_Espécie' => (string) ($r['speciesRef'] ?? ''),
+                'Banco_Espécie' => (string) ($r['speciesBank'] ?? ''),
                 'Recibo' => (string) ($r['receiptNumber'] ?? ''),
                 'Conta' => (string) ($r['accountLabel'] ?? ''),
+                'Comprovante' => !empty($r['proofPdfPath']) ? 'SIM' : 'NAO',
                 'Descrição' => (string) ($r['description'] ?? ''),
                 'Valor' => money_br((float) $r['amount']),
             ];
         }
         return [
             'meta' => $meta,
-            'columns' => ['Data', 'Tipo', 'Doador', 'CPF/CNPJ', 'Espécie', 'Recibo', 'Conta', 'Descrição', 'Valor'],
+            'columns' => ['Data', 'Tipo', 'Doador', 'CPF/CNPJ', 'Espécie', 'Id_Espécie', 'Banco_Espécie', 'Recibo', 'Conta', 'Comprovante', 'Descrição', 'Valor'],
             'rows' => $rows,
             'summary' => ['Quantidade' => (string) count($rows), 'Total' => money_br($total)],
         ];
@@ -582,6 +587,8 @@ final class Reports
                 'Categoria' => Categories::label((string) ($e['category'] ?? '')),
                 'Fornecedor' => (string) ($e['supplierName'] ?? ''),
                 'Documento' => (string) ($e['supplierDoc'] ?? ''),
+                'Espécie_Doc' => (string) ($e['docSpecies'] ?? ''),
+                'Nº_Doc' => (string) ($e['docNumber'] ?? ''),
                 'NF' => (string) ($e['numeroNf'] ?? ''),
                 'Qtd' => isset($e['quantity']) && $e['quantity'] !== null && $e['quantity'] !== ''
                     ? (string) $e['quantity'] : '',
@@ -590,6 +597,7 @@ final class Reports
                 'Forma_Pagamento' => PAYMENT_METHODS[$payMethod] ?? ($payMethod !== '' ? $payMethod : '—'),
                 'Data_Pagamento' => !empty($e['paymentDate']) ? date_br(substr((string) $e['paymentDate'], 0, 10)) : '',
                 'Fonte_Pagamento' => BANK_RESOURCE_ORIGINS[$payOrigin] ?? ($payOrigin !== '' ? $payOrigin : '—'),
+                'Comprovante' => !empty($e['proofPdfPath']) ? 'SIM' : 'NAO',
                 'Status' => (string) ($e['status'] ?? ''),
                 'Conta' => (string) ($e['accountLabel'] ?? ''),
                 'Descrição' => (string) ($e['description'] ?? ''),
@@ -599,8 +607,8 @@ final class Reports
         return [
             'meta' => $meta,
             'columns' => [
-                'Data', 'Categoria', 'Fornecedor', 'Documento', 'NF', 'Qtd', 'Vl_Unit',
-                'Forma_Pagamento', 'Data_Pagamento', 'Fonte_Pagamento', 'Status', 'Conta', 'Descrição', 'Valor',
+                'Data', 'Categoria', 'Fornecedor', 'Documento', 'Espécie_Doc', 'Nº_Doc', 'NF', 'Qtd', 'Vl_Unit',
+                'Forma_Pagamento', 'Data_Pagamento', 'Fonte_Pagamento', 'Comprovante', 'Status', 'Conta', 'Descrição', 'Valor',
             ],
             'rows' => $rows,
             'summary' => ['Quantidade' => (string) count($rows), 'Total' => money_br($total)],

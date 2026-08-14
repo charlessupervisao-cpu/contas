@@ -133,15 +133,44 @@ if (request_method() === 'POST' && $canWrite) {
             $agencyDvVal = $agencyDv !== '' ? $agencyDv : null;
             $accountDvVal = $accountDv !== '' ? $accountDv : null;
             $racVal = $racNumber !== '' ? $racNumber : null;
+            $statementPath = null;
+            $prevStatement = null;
+            if ($id !== '' && is_array($edit) && !empty($edit['statementPdfPath'])) {
+                $prevStatement = (string) $edit['statementPdfPath'];
+            }
+            if (!empty($_FILES['statementPdf']['name'])) {
+                try {
+                    $entityId = $id !== '' ? $id : cuid();
+                    $statementPath = DocumentProofUpload::save($_FILES['statementPdf'], 'extratos', $entityId, $prevStatement);
+                } catch (Throwable $e) {
+                    $errors[] = $e->getMessage();
+                }
+            }
+        }
+        if (!$errors && $campaign) {
+            $originVal = $resourceOrigin !== '' ? $resourceOrigin : null;
+            $agencyDvVal = $agencyDv !== '' ? $agencyDv : null;
+            $accountDvVal = $accountDv !== '' ? $accountDv : null;
+            $racVal = $racNumber !== '' ? $racNumber : null;
             if ($id !== '') {
                 try {
-                    $pdo->prepare(
-                        'UPDATE `BankAccount` SET label=?, bankName=?, bankCode=?, agency=?, agencyDv=?, accountNumber=?, accountDv=?, accountType=?, resourceOrigin=?, openedAt=?, racNumber=?, depositCpf=?, depositCnpj=?, updatedAt=?
-                         WHERE id=? AND campaignId=?'
-                    )->execute([
-                        $label, $bankName, $bankCode, $agency, $agencyDvVal, $accountNumber, $accountDvVal, $accountType,
-                        $originVal, $openedAt, $racVal, $depositCpf, $depositCnpj, $now, $id, $cid,
-                    ]);
+                    if ($statementPath) {
+                        $pdo->prepare(
+                            'UPDATE `BankAccount` SET label=?, bankName=?, bankCode=?, agency=?, agencyDv=?, accountNumber=?, accountDv=?, accountType=?, resourceOrigin=?, openedAt=?, racNumber=?, depositCpf=?, depositCnpj=?, statementPdfPath=?, updatedAt=?
+                             WHERE id=? AND campaignId=?'
+                        )->execute([
+                            $label, $bankName, $bankCode, $agency, $agencyDvVal, $accountNumber, $accountDvVal, $accountType,
+                            $originVal, $openedAt, $racVal, $depositCpf, $depositCnpj, $statementPath, $now, $id, $cid,
+                        ]);
+                    } else {
+                        $pdo->prepare(
+                            'UPDATE `BankAccount` SET label=?, bankName=?, bankCode=?, agency=?, agencyDv=?, accountNumber=?, accountDv=?, accountType=?, resourceOrigin=?, openedAt=?, racNumber=?, depositCpf=?, depositCnpj=?, updatedAt=?
+                             WHERE id=? AND campaignId=?'
+                        )->execute([
+                            $label, $bankName, $bankCode, $agency, $agencyDvVal, $accountNumber, $accountDvVal, $accountType,
+                            $originVal, $openedAt, $racVal, $depositCpf, $depositCnpj, $now, $id, $cid,
+                        ]);
+                    }
                 } catch (Throwable) {
                     $pdo->prepare(
                         'UPDATE `BankAccount` SET label=?, bankName=?, bankCode=?, agency=?, accountNumber=?, accountType=?, resourceOrigin=?, openedAt=?, depositCpf=?, depositCnpj=?, updatedAt=?
@@ -164,11 +193,11 @@ if (request_method() === 'POST' && $canWrite) {
                 $newId = cuid();
                 try {
                     $pdo->prepare(
-                        'INSERT INTO `BankAccount` (id, campaignId, label, bankName, bankCode, agency, agencyDv, accountNumber, accountDv, accountType, resourceOrigin, openedAt, racNumber, balance, depositCpf, depositCnpj, active, sortOrder, createdAt, updatedAt)
-                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?)'
+                        'INSERT INTO `BankAccount` (id, campaignId, label, bankName, bankCode, agency, agencyDv, accountNumber, accountDv, accountType, resourceOrigin, openedAt, racNumber, balance, depositCpf, depositCnpj, statementPdfPath, active, sortOrder, createdAt, updatedAt)
+                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?)'
                     )->execute([
                         $newId, $cid, $label, $bankName, $bankCode, $agency, $agencyDvVal, $accountNumber, $accountDvVal, $accountType,
-                        $originVal, $openedAt, $racVal, $balance, $depositCpf, $depositCnpj, $activeCount, $now, $now,
+                        $originVal, $openedAt, $racVal, $balance, $depositCpf, $depositCnpj, $statementPath, $activeCount, $now, $now,
                     ]);
                 } catch (Throwable) {
                     $pdo->prepare(
@@ -272,7 +301,7 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
     <?php if ($errors): ?>
       <div class="alert alert-danger"><?php foreach ($errors as $err): ?><div><?= e($err) ?></div><?php endforeach; ?></div>
     <?php endif; ?>
-    <form method="post" data-mask-form>
+    <form method="post" enctype="multipart/form-data" data-mask-form>
       <input type="hidden" name="action" value="save">
       <input type="hidden" name="id" value="<?= e((string) ($edit['id'] ?? '')) ?>">
       <div class="field"><label class="label req">Rótulo / identificação</label><input class="input" name="label" value="<?= e((string) ($edit['label'] ?? '')) ?>" required></div>
@@ -326,6 +355,17 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
       <div class="field">
         <label class="label">Nº RAC / protocolo</label>
         <input class="input" name="racNumber" value="<?= e((string) ($edit['racNumber'] ?? '')) ?>" placeholder="Requerimento de Abertura de Conta">
+      </div>
+      <div class="field">
+        <label class="label">Extrato bancário PDF (Conta+JE)</label>
+        <input class="input" type="file" name="statementPdf" accept="application/pdf,.pdf">
+        <?php if (!empty($edit['statementPdfPath'])): ?>
+          <div class="muted" style="font-size:.78rem;margin-top:.3rem">
+            Arquivo atual: <a href="<?= e(url_path(ltrim((string) $edit['statementPdfPath'], '/'))) ?>" target="_blank" rel="noopener">abrir PDF</a>
+          </div>
+        <?php else: ?>
+          <div class="muted" style="font-size:.78rem;margin-top:.3rem">PDF até 10 MB — incluso no pacote de entrega ao Conta+JE.</div>
+        <?php endif; ?>
       </div>
       <?php
         $checkCpf = request_method() === 'POST'

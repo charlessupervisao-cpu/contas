@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 /**
  * Pacote de envio Conta+JE / TSE — CSVs com nomenclatura oficial §11
- * para conferência e carga no portal Conta+JE.
+ * + comprovantes PDF para conferência/carga no portal Conta+JE.
  */
 final class ContaJeExport
 {
@@ -49,6 +49,12 @@ final class ContaJeExport
         $add('07-recibos-eleitorais.csv', self::csvFromReport('recibos', $campaign));
         $add('08-demonstrativo-receitas-despesas.csv', self::csvFromReport('demonstrativo', $campaign));
         $add('09-inconsistencias.csv', self::csvInconsistencias($campaign));
+        $add('10-doadores-originarios.csv', self::csvOriginDonors($campaign));
+        $add('11-fundo-de-caixa.csv', self::csvCashFund($campaign));
+        $add('12-transferencias-contas.csv', self::csvTransfers($campaign));
+
+        $proofCount = self::addProofPdfs($zip, $campaign, $files);
+
         $add('manifesto.json', json_encode([
             'system' => 'CONTAS',
             'vendor' => APP_VENDOR,
@@ -58,6 +64,7 @@ final class ContaJeExport
             'manual' => ElectoralRules::MANUAL_URL,
             'campaign' => [
                 'candidateName' => $campaign['candidateName'] ?? null,
+                'candidateCpf' => $campaign['candidateCpf'] ?? null,
                 'cnpjCampaign' => $campaign['cnpjCampaign'] ?? null,
                 'office' => $campaign['office'] ?? null,
                 'party' => $campaign['party'] ?? null,
@@ -65,6 +72,7 @@ final class ContaJeExport
             ],
             'generatedAt' => date('c'),
             'files' => $files,
+            'proofPdfCount' => $proofCount,
             'note' => 'Pacote de conferência/carga auxiliar. A entrega oficial é feita no Conta+JE.',
         ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 
@@ -95,22 +103,27 @@ Gerado em: {$when}
 Build CONTAS: {$build}
 
 COMO USAR NO PORTAL Conta+JE
-1) Acesse https://contamaisje.tse.jus.br/ e autentique-se.
+1) Acesse https://contamaisje.tse.jus.br/ e autentique-se (gov.br / e-Título).
 2) Selecione/crie a prestação de contas da candidatura.
 3) Confira Qualificação, Representantes e Contas Bancárias
    com os CSVs 01–03 deste pacote.
 4) Lance/confira Doações Recebidas e Despesas Efetuadas
-   com os CSVs 04–06 (ou importe FCC/internet quando aplicável).
-5) Gere os Relatórios oficiais no Conta+JE (§11) e compare
+   com os CSVs 04–06 (doadores originários no CSV 10).
+5) Informe Fundo de caixa e Transferências (CSVs 11–12) no Conta+JE §10.
+6) Anexe os PDFs da pasta comprovantes/ nos lançamentos
+   correspondentes (receitas, despesas, extratos, fundo, transferências).
+7) Gere os Relatórios oficiais no Conta+JE (§11) e compare
    com os CSVs 07–08.
-6) Execute Verificar Inconsistências no Conta+JE e no CONTAS
+8) Execute Verificar Inconsistências no Conta+JE e no CONTAS
    (CSV 09). Corrija impeditivas.
-7) Entregue a prestação no Conta+JE (parcial/final conforme TRE-GO).
+9) Entregue a prestação no Conta+JE (parcial/final conforme TRE-GO).
 
 IMPORTANTE
 - Este ZIP NÃO substitui a entrega eletrônica no Conta+JE.
 - Serve para conferência e para acelerar o preenchimento/importação
   dos dados já organizados no CONTAS (contas.synetiq.com.br).
+- O CONTAS não autentica no portal Conta+JE (credenciais gov.br
+  são pessoais). Use o pacote + o portal oficial.
 - Base estadual: hub TRE-GO Prestação de Contas Eleições 2026.
 
 Synetiq — https://synetiq.com.br
@@ -169,12 +182,13 @@ TXT;
                 'Tipo_Conta' => (string) ($a['accountType'] ?? ''),
                 'Data_Abertura' => (string) ($a['openedAt'] ?? ''),
                 'RAC' => (string) ($a['racNumber'] ?? ''),
+                'Extrato_PDF' => !empty($a['statementPdfPath']) ? 'SIM' : 'NAO',
                 'Saldo' => number_format((float) ($a['balance'] ?? 0), 2, '.', ''),
                 'Ativa' => !empty($a['active']) ? 'SIM' : 'NAO',
             ];
         }
         return Reports::toCsv([
-            'columns' => ['Tipo_Fonte', 'Codigo_Fonte', 'Rotulo', 'Banco', 'Codigo_Banco', 'Agencia', 'DV_Agencia', 'Conta', 'DV_Conta', 'Tipo_Conta', 'Data_Abertura', 'RAC', 'Saldo', 'Ativa'],
+            'columns' => ['Tipo_Fonte', 'Codigo_Fonte', 'Rotulo', 'Banco', 'Codigo_Banco', 'Agencia', 'DV_Agencia', 'Conta', 'DV_Conta', 'Tipo_Conta', 'Data_Abertura', 'RAC', 'Extrato_PDF', 'Saldo', 'Ativa'],
             'rows' => $rows,
         ]);
     }
@@ -195,5 +209,176 @@ TXT;
             'columns' => ['Codigo', 'Nivel', 'Mensagem', 'Href'],
             'rows' => $rows,
         ]);
+    }
+
+    private static function csvOriginDonors(array $campaign): string
+    {
+        $pdo = Database::pdo();
+        $rows = [];
+        try {
+            $st = $pdo->prepare(
+                'SELECT o.*, r.date AS revenueDate, r.amount AS revenueAmount, r.donorName AS intermediaryName, r.receiptNumber
+                 FROM `RevenueOriginDonor` o
+                 LEFT JOIN `Revenue` r ON r.id = o.revenueId
+                 WHERE o.campaignId=?
+                 ORDER BY r.date DESC, o.createdAt DESC'
+            );
+            $st->execute([(string) $campaign['id']]);
+            foreach ($st->fetchAll() ?: [] as $o) {
+                $rows[] = [
+                    'Data_Doacao' => (string) ($o['revenueDate'] ?? ''),
+                    'Recibo' => (string) ($o['receiptNumber'] ?? ''),
+                    'Intermediario' => (string) ($o['intermediaryName'] ?? ''),
+                    'CPF_Originario' => (string) ($o['cpf'] ?? ''),
+                    'Nome_Originario' => (string) ($o['name'] ?? ''),
+                    'Especie' => RESOURCE_SPECIES[$o['resourceSpecies'] ?? ''] ?? (string) ($o['resourceSpecies'] ?? ''),
+                    'Valor' => number_format((float) ($o['amount'] ?? 0), 2, '.', ''),
+                    'Valor_Doacao' => number_format((float) ($o['revenueAmount'] ?? 0), 2, '.', ''),
+                ];
+            }
+        } catch (Throwable) {
+        }
+        return Reports::toCsv([
+            'columns' => ['Data_Doacao', 'Recibo', 'Intermediario', 'CPF_Originario', 'Nome_Originario', 'Especie', 'Valor', 'Valor_Doacao'],
+            'rows' => $rows,
+        ]);
+    }
+
+    private static function csvCashFund(array $campaign): string
+    {
+        $pdo = Database::pdo();
+        $rows = [];
+        $labels = [
+            'CONSTITUICAO' => 'Constituição',
+            'REPOSICAO' => 'Reposição',
+            'PRESTACAO' => 'Prestação / baixa',
+        ];
+        try {
+            $st = $pdo->prepare(
+                'SELECT f.*, a.label AS accountLabel FROM `CashFund` f
+                 LEFT JOIN `BankAccount` a ON a.id = f.bankAccountId
+                 WHERE f.campaignId=? ORDER BY f.date ASC'
+            );
+            $st->execute([(string) $campaign['id']]);
+            foreach ($st->fetchAll() ?: [] as $f) {
+                $rows[] = [
+                    'Data' => (string) ($f['date'] ?? ''),
+                    'Tipo' => $labels[$f['kind'] ?? ''] ?? (string) ($f['kind'] ?? ''),
+                    'Conta' => (string) ($f['accountLabel'] ?? ''),
+                    'Descricao' => (string) ($f['description'] ?? ''),
+                    'Comprovante_PDF' => !empty($f['proofPdfPath']) ? 'SIM' : 'NAO',
+                    'Valor' => number_format((float) ($f['amount'] ?? 0), 2, '.', ''),
+                ];
+            }
+        } catch (Throwable) {
+        }
+        return Reports::toCsv([
+            'columns' => ['Data', 'Tipo', 'Conta', 'Descricao', 'Comprovante_PDF', 'Valor'],
+            'rows' => $rows,
+        ]);
+    }
+
+    private static function csvTransfers(array $campaign): string
+    {
+        $pdo = Database::pdo();
+        $rows = [];
+        try {
+            $st = $pdo->prepare(
+                'SELECT t.*, fa.label AS fromLabel, ta.label AS toLabel
+                 FROM `AccountTransfer` t
+                 LEFT JOIN `BankAccount` fa ON fa.id = t.fromAccountId
+                 LEFT JOIN `BankAccount` ta ON ta.id = t.toAccountId
+                 WHERE t.campaignId=? ORDER BY t.date ASC'
+            );
+            $st->execute([(string) $campaign['id']]);
+            foreach ($st->fetchAll() ?: [] as $t) {
+                $rows[] = [
+                    'Data' => (string) ($t['date'] ?? ''),
+                    'Origem' => (string) ($t['fromLabel'] ?? ''),
+                    'Destino' => (string) ($t['toLabel'] ?? ''),
+                    'Descricao' => (string) ($t['description'] ?? ''),
+                    'Comprovante_PDF' => !empty($t['proofPdfPath']) ? 'SIM' : 'NAO',
+                    'Valor' => number_format((float) ($t['amount'] ?? 0), 2, '.', ''),
+                ];
+            }
+        } catch (Throwable) {
+        }
+        return Reports::toCsv([
+            'columns' => ['Data', 'Origem', 'Destino', 'Descricao', 'Comprovante_PDF', 'Valor'],
+            'rows' => $rows,
+        ]);
+    }
+
+    /**
+     * Inclui PDFs salvos em /uploads/comprovantes no ZIP.
+     * @param list<string> $files
+     */
+    private static function addProofPdfs(ZipArchive $zip, array $campaign, array &$files): int
+    {
+        $pdo = Database::pdo();
+        $cid = (string) $campaign['id'];
+        $paths = [];
+
+        $collect = static function (?string $webPath) use (&$paths): void {
+            if (!$webPath) {
+                return;
+            }
+            $abs = DocumentProofUpload::absolutePath($webPath);
+            if ($abs) {
+                $paths[$webPath] = $abs;
+            }
+        };
+
+        try {
+            $st = $pdo->prepare('SELECT proofPdfPath FROM `Revenue` WHERE campaignId=? AND proofPdfPath IS NOT NULL AND proofPdfPath<>\'\'');
+            $st->execute([$cid]);
+            foreach ($st->fetchAll(PDO::FETCH_COLUMN) ?: [] as $p) {
+                $collect((string) $p);
+            }
+        } catch (Throwable) {
+        }
+        try {
+            $st = $pdo->prepare('SELECT proofPdfPath FROM `Expense` WHERE campaignId=? AND proofPdfPath IS NOT NULL AND proofPdfPath<>\'\'');
+            $st->execute([$cid]);
+            foreach ($st->fetchAll(PDO::FETCH_COLUMN) ?: [] as $p) {
+                $collect((string) $p);
+            }
+        } catch (Throwable) {
+        }
+        try {
+            $st = $pdo->prepare('SELECT statementPdfPath FROM `BankAccount` WHERE campaignId=? AND statementPdfPath IS NOT NULL AND statementPdfPath<>\'\'');
+            $st->execute([$cid]);
+            foreach ($st->fetchAll(PDO::FETCH_COLUMN) ?: [] as $p) {
+                $collect((string) $p);
+            }
+        } catch (Throwable) {
+        }
+        try {
+            $st = $pdo->prepare('SELECT proofPdfPath FROM `CashFund` WHERE campaignId=? AND proofPdfPath IS NOT NULL AND proofPdfPath<>\'\'');
+            $st->execute([$cid]);
+            foreach ($st->fetchAll(PDO::FETCH_COLUMN) ?: [] as $p) {
+                $collect((string) $p);
+            }
+        } catch (Throwable) {
+        }
+        try {
+            $st = $pdo->prepare('SELECT proofPdfPath FROM `AccountTransfer` WHERE campaignId=? AND proofPdfPath IS NOT NULL AND proofPdfPath<>\'\'');
+            $st->execute([$cid]);
+            foreach ($st->fetchAll(PDO::FETCH_COLUMN) ?: [] as $p) {
+                $collect((string) $p);
+            }
+        } catch (Throwable) {
+        }
+
+        $count = 0;
+        foreach ($paths as $web => $abs) {
+            $base = basename($abs);
+            $entry = 'comprovantes/' . $base;
+            if ($zip->addFile($abs, $entry)) {
+                $files[] = $entry;
+                $count++;
+            }
+        }
+        return $count;
     }
 }

@@ -292,6 +292,38 @@ final class ElectoralRules
                 'href' => url_path('admin/wizard.php'),
             ];
         }
+        $cpfCand = only_digits((string) ($campaign['candidateCpf'] ?? ''));
+        if ($cpfCand === '') {
+            $issues[] = [
+                'code' => 'CPF_CANDIDATO',
+                'level' => 'IMPEDITIVA',
+                'message' => 'CPF do candidato não informado na Qualificação (Conta+JE).',
+                'href' => url_path('admin/wizard.php'),
+            ];
+        } elseif (strlen($cpfCand) !== 11 || !is_valid_cpf($cpfCand)) {
+            $issues[] = [
+                'code' => 'CPF_CANDIDATO_INVALIDO',
+                'level' => 'IMPEDITIVA',
+                'message' => 'CPF do candidato inválido na Qualificação.',
+                'href' => url_path('admin/wizard.php'),
+            ];
+        }
+        if (trim((string) ($campaign['phone'] ?? '')) === '') {
+            $issues[] = [
+                'code' => 'TELEFONE',
+                'level' => 'NAO_IMPEDITIVA',
+                'message' => 'Telefone do prestador não informado na Qualificação.',
+                'href' => url_path('admin/wizard.php'),
+            ];
+        }
+        if (trim((string) ($campaign['email'] ?? '')) === '') {
+            $issues[] = [
+                'code' => 'EMAIL',
+                'level' => 'NAO_IMPEDITIVA',
+                'message' => 'E-mail do prestador não informado na Qualificação.',
+                'href' => url_path('admin/wizard.php'),
+            ];
+        }
         if (trim((string) ($campaign['addressStreet'] ?? '')) === '' && self::campaignHasAddressColumns($pdo)) {
             $issues[] = [
                 'code' => 'ENDERECO',
