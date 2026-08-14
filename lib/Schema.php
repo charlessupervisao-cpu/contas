@@ -318,7 +318,7 @@ final class Schema
                     `role` VARCHAR(64) NOT NULL,
                     `name` VARCHAR(191) NOT NULL,
                     `cpf` VARCHAR(32) NULL,
-                    'email` VARCHAR(191) NULL,
+                    `email` VARCHAR(191) NULL,
                     `phone` VARCHAR(64) NULL,
                     `oabUf` VARCHAR(8) NULL,
                     `oabNumber` VARCHAR(64) NULL,

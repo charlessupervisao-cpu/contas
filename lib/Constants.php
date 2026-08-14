@@ -4,7 +4,7 @@ declare(strict_types=1);
 const APP_NAME = 'CONTAS';
 const APP_TAGLINE = 'Prestação de contas para políticos';
 /** Build publicada no deploy — use para confirmar se o cPanel está atualizado */
-const APP_BUILD = '2026.08.14-relatorios';
+const APP_BUILD = '2026.08.14-fix500';
 const ELECTION_YEAR = 2026;
 /** Fim da janela do demonstrativo / 1º turno (GO 2026) */
 const CAMPAIGN_END_DATE = '2026-10-04';
