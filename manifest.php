@@ -12,9 +12,9 @@ $iconsBase = asset('assets/img/icons');
 
 $manifest = [
     'id' => $scope,
-    'name' => 'PolliContas',
-    'short_name' => 'PolliContas',
-    'description' => 'App de prestação de contas eleitorais · Dashboard financeiro',
+    'name' => 'CONTAS',
+    'short_name' => 'CONTAS',
+    'description' => 'Prestação de contas para políticos · Dashboard financeiro · Desenvolvido por Synetiq',
     'lang' => 'pt-BR',
     'dir' => 'ltr',
     'start_url' => $start,

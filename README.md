@@ -1,53 +1,88 @@
-# POLLICONTAS
+# CONTAS
 
-Prestação de contas eleitorais — **PHP 8.1+ · MySQL · cPanel**  
-Host: [pollicontas.synetiq.com.br](https://pollicontas.synetiq.com.br)
+Sistema independente de **prestação de contas para políticos** — PHP 8.1+ · MySQL · cPanel  
+Host: [contas.synetiq.com.br](https://contas.synetiq.com.br)  
+Desenvolvido por [Synetiq](https://synetiq.com.br) — Soluções Digitais Inteligentes
 
 Sistema **interno** (sem portal público). Quem não é Master entra só para **consultar**, sem alterar dados.
 
+## Conformidade Conta+JE / TRE-GO / TSE 2026
+
+Alinhado ao Manual Conta+JE e à legislação eleitoral, com base estadual do TRE-GO:
+
+- Hub TRE-GO: [Prestação de Contas Eleições 2026](https://www.tre-go.jus.br/eleicoes/prestacao-de-contas-eleitorais/prestacao-de-contas-eleicoes-2026)
+- Catálogo embutido: `data/tre-go-2026.json` (prazos, limites GO, GRU/PagTesouro e 30+ links oficiais do hub e subpáginas)
+- Tela no sistema: **Base legal TRE-GO 2026**
+- Relatórios Conta+JE §11 (diversos, receitas, despesas, recibos) + RF 72h / parcial / final TRE-GO
+- Lei nº 9.504/1997 · Res.-TSE 23.607/2019 · Res.-TSE 23.610/2019
+- Manual Conta+JE (PDF)
+
+O CONTAS prepara e organiza a prestação; a **entrega oficial** continua no Conta+JE do TSE.
+
+Recursos implementados:
+
+- Contas bancárias com fonte: Doações para Campanha, Fundo Partidário, FEFC (obrigatórias no TRE-GO)
+- Limites de gastos e de militância Goiás 2026
+- Prazos parcial/final, RAC (10 dias), relatórios em 72h
+- Tipos de receita Conta+JE + espécies + recibo eleitoral
+- Representantes legais (advogado OAB / contabilista CRC)
+- Verificação de inconsistências (impeditivas / não impeditivas)
+- Relatórios imprimíveis / CSV para conferência antes da entrega
+- Qualificação com endereço e contatos
+
 ## Deploy limpo (cPanel)
 
-### Download no GitHub
+### Download pronto
 
-Pacote pronto para cPanel (branch desta PR):
+Pacote **completo** (todos os arquivos/pastas + relatórios oficiais Conta+JE/TSE):
 
-- [`releases/pollicontas-cpanel-deploy.zip`](releases/pollicontas-cpanel-deploy.zip)
+- [`releases/CONTAS-DEPLOY-COMPLETO.zip`](releases/CONTAS-DEPLOY-COMPLETO.zip) ← use este
+- Alias: [`releases/contas-cpanel-deploy.zip`](releases/contas-cpanel-deploy.zip)
+
+Dentro do ZIP: `LEIA-ME-DEPLOY.txt` + `MANIFEST.txt` (SHA-256 de cada arquivo).
 
 Ou gere localmente:
 
 ```bash
 bash bin/pack-deploy.sh
-# → dist/pollicontas-deploy-YYYYMMDD.zip
 ```
 
+O script valida a sintaxe de **todos** os PHP antes de zipar (evita erro 500 por parse).
 
+### Atualização no servidor
+
+1. Backup de `.env` e `uploads/`
+2. Extrair o ZIP sobrescrevendo a raiz do domínio
+3. Manter `.env` e `uploads/`
+4. Confirmar `https://contas.synetiq.com.br/api/health.php` → `"build":"2026.08.14-deploy-completo"`
+5. Menu: **Relatórios Conta+JE** (formato oficial TSE) · Base legal TRE-GO · Inconsistências
 
 ### O que sobe no servidor
 
 ```
-pollicontas/
+contas/
 ├── .htaccess
 ├── .env.example
+├── LEIA-ME-DEPLOY.txt · MANIFEST.txt
 ├── bootstrap.php
-├── index.php · login.php · logout.php
-├── install.php          ← apagar depois de instalar
-├── admin/               ← painel + dashboard
-├── api/
-├── assets/
-├── config/ · lib/ · sql/ · templates/
-└── uploads/candidates/  ← foto do deputado (gravável)
+├── index.php · login.php · logout.php · install.php
+├── admin/          ← painel, relatórios oficiais, base legal
+├── api/            ← health, cep, cnpj, nfe
+├── assets/         ← css (incl. relatorio-oficial.css), js, img
+├── config/ · lib/ · sql/ · templates/ · data/
+└── uploads/        ← contracts + candidates (gravável)
 ```
 
-```bash
-bash bin/pack-deploy.sh
-# → dist/pollicontas-deploy-YYYYMMDD.zip
-```
+### Banco de dados (cPanel)
+
+- Banco: `synetiqcombr_contas`
+- Domínio: `contas.synetiq.com.br`
 
 ### Passos no cPanel
 
-1. Crie banco MySQL + usuário (ALL PRIVILEGES).
-2. Upload do ZIP no document root do subdomínio.
-3. Acesse `/install.php` e configure o MySQL.
+1. Confirme o banco MySQL `synetiqcombr_contas` + usuário (ALL PRIVILEGES).
+2. Upload do ZIP no document root do subdomínio `contas.synetiq.com.br`.
+3. Acesse `/install.php` e configure o MySQL (use o banco `synetiqcombr_contas`).
 4. Apague `install.php`.
 5. Garanta permissão de escrita em `uploads/candidates/` (755 ou 775).
 6. Confirme `/api/health.php`.
@@ -58,10 +93,10 @@ Senha: `admin123`
 
 | E-mail | Perfil |
 |---|---|
-| master@pollicontas.synetiq.com.br | Master (altera / lança) |
-| financeiro@pollicontas.synetiq.com.br | Financeiro (só leitura) |
-| rh@pollicontas.synetiq.com.br | RH (só leitura) |
-| consulta@pollicontas.synetiq.com.br | Consulta (só leitura) |
+| master@contas.synetiq.com.br | Master (altera / lança) |
+| financeiro@contas.synetiq.com.br | Financeiro (só leitura) |
+| rh@contas.synetiq.com.br | RH (só leitura) |
+| consulta@contas.synetiq.com.br | Consulta (só leitura) |
 
 ### Foto do deputado
 
@@ -70,7 +105,7 @@ Ela aparece na **página inicial** (dashboard) ao lado do nome.
 
 ### Fontes
 
-Source Serif 4 (títulos) + Source Sans 3 (texto) — tipografia séria e legível.
+Sora (títulos) + Manrope (texto) — tipografia séria e legível.
 
 ### Dashboard e menu
 
@@ -92,3 +127,7 @@ Arquivos: `manifest.php`, `sw.js`, `assets/img/icons/*`.
 ## Requisitos
 
 PHP 8.1+ (`pdo_mysql`, `mbstring`, `gd` recomendado para redimensionar foto, `fileinfo`) · MySQL 5.7+ / MariaDB 10.3+
+
+---
+
+© Synetiq — [synetiq.com.br](https://synetiq.com.br)

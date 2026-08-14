@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/bootstrap.php';
 
 $user = Auth::requireLogin('saldos');
 $activeModule = 'saldos';
-$pageTitle = 'Ajuste de Saldos';
+$pageTitle = '10 · Ajuste de saldos';
 $campaign = Metrics::getCampaign();
 $pdo = Database::pdo();
 $canWrite = can_launch($user['role']);

@@ -471,7 +471,7 @@ final class TseFornecedores
         $ctx = stream_context_create([
             'http' => [
                 'method' => 'GET',
-                'header' => "Accept: application/json\r\nUser-Agent: POLLICONTAS/1.0 (+https://pollicontas.synetiq.com.br)\r\n",
+                'header' => "Accept: application/json\r\nUser-Agent: CONTAS/1.0 (+https://contas.synetiq.com.br)\r\n",
                 'timeout' => 45,
                 'ignore_errors' => true,
             ],

@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/bootstrap.php';
 
 $user = Auth::requireLogin('fornecedores');
 $activeModule = 'fornecedores';
-$pageTitle = 'Fornecedores';
+$pageTitle = '6 · Fornecedores';
 $campaign = Metrics::getCampaign();
 $pdo = Database::pdo();
 $canWrite = can_launch($user['role']);

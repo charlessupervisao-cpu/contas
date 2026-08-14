@@ -9,7 +9,7 @@ final class Auth
             return;
         }
         $cookiePath = app_base_path() !== '' ? app_base_path() . '/' : '/';
-        session_name('pollicontas_session');
+        session_name('contas_session');
         session_set_cookie_params([
             'lifetime' => 60 * 60 * 24 * 7,
             'path' => $cookiePath,

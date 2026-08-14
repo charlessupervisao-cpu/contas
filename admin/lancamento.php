@@ -43,12 +43,28 @@ if (request_method() === 'POST') {
         'donorName' => (string) post('donorName', ''),
         'donorCpf' => (string) post('donorCpf', ''),
         'receiptNumber' => (string) post('receiptNumber', ''),
+        'donationType' => (string) post('donationType', ''),
+        'resourceSpecies' => (string) post('resourceSpecies', ''),
+        'speciesRef' => (string) post('speciesRef', ''),
+        'speciesBank' => (string) post('speciesBank', ''),
+        'source' => (string) post('source', ''),
+        'emitReceipt' => post('emitReceipt') ? '1' : '',
+        'isFcc' => post('isFcc') ? '1' : '',
+        'isInternet' => post('isInternet') ? '1' : '',
+        'isLoan' => post('isLoan') ? '1' : '',
         'description' => (string) post('description', ''),
         'category' => $category,
         'supplierId' => (string) post('supplierId', ''),
         'naturezaOp' => (string) post('naturezaOp', ''),
         'dataEmissao' => (string) post('dataEmissao', ''),
         'numeroNf' => (string) post('numeroNf', ''),
+        'docSpecies' => (string) post('docSpecies', ''),
+        'docNumber' => (string) post('docNumber', ''),
+        'paymentMethod' => (string) post('paymentMethod', ''),
+        'paymentDate' => (string) post('paymentDate', ''),
+        'paymentResourceOrigin' => (string) post('paymentResourceOrigin', ''),
+        'quantity' => (string) post('quantity', ''),
+        'unitValue' => (string) post('unitValue', ''),
         'caboId' => (string) post('caboId', ''),
         'vehicleId' => (string) post('vehicleId', ''),
         'installments' => (string) $installments,
@@ -67,11 +83,29 @@ if (request_method() === 'POST') {
         'donorName' => post('donorName'),
         'donorCpf' => post('donorCpf'),
         'receiptNumber' => post('receiptNumber'),
+        'donationType' => post('donationType'),
+        'resourceSpecies' => post('resourceSpecies'),
+        'speciesRef' => post('speciesRef'),
+        'speciesBank' => post('speciesBank'),
+        'source' => post('source'),
+        'emitReceipt' => post('emitReceipt'),
+        'isFcc' => post('isFcc'),
+        'isInternet' => post('isInternet'),
+        'isLoan' => post('isLoan'),
+        'originDonors' => $_POST['originDonors'] ?? [],
+        '_proofFile' => $_FILES['proofPdf'] ?? null,
         'category' => $category,
         'supplierId' => post('supplierId') ?: null,
         'naturezaOp' => post('naturezaOp'),
         'dataEmissao' => post('dataEmissao'),
         'numeroNf' => post('numeroNf'),
+        'docSpecies' => post('docSpecies'),
+        'docNumber' => post('docNumber'),
+        'paymentMethod' => post('paymentMethod'),
+        'paymentDate' => post('paymentDate'),
+        'paymentResourceOrigin' => post('paymentResourceOrigin'),
+        'quantity' => post('quantity'),
+        'unitValue' => post('unitValue'),
         'caboId' => post('caboId') ?: null,
         'vehicleId' => post('vehicleId') ?: null,
         'installments' => $installments,
@@ -107,9 +141,10 @@ $val = static function (string $key, string $default = '') use ($old): string {
 require dirname(__DIR__) . '/templates/admin_layout_start.php';
 ?>
 <div class="page-form">
-<div class="panel form-card animate-rise">
-  <h2 class="display" style="margin-top:0">Lançamento</h2>
-  <p class="muted" style="margin-top:0"><?= e(($user['name'] ?? '') . ' · ' . (ROLE_LABELS[$user['role']] ?? $user['role'])) ?></p>
+<div class="panel form-card animate-rise je-section">
+  <div class="je-kicker">Conta+JE · Receitas §8 · Despesas §9</div>
+  <h2 class="display" style="margin-top:.2rem">Lançamento de receita / despesa</h2>
+  <p class="muted" style="margin-top:0">Campos alinhados ao Conta+JE (tipo, espécie, recibo, natureza, pagamento e NF).</p>
 
   <?php if (!can_launch($user['role'])): ?>
     <div class="alert alert-warn">Somente o perfil Master pode lançar. Você está em modo consulta.</div>
@@ -140,7 +175,7 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
     }
   ?>
 
-  <form method="post" data-mask-form data-lancamento-form novalidate>
+  <form method="post" enctype="multipart/form-data" data-mask-form data-lancamento-form novalidate>
     <input type="hidden" name="donorDocType" value="<?= e($oldDocType) ?>" data-donor-doc-type-value>
     <div class="field row-actions">
       <label><input type="radio" name="kind" value="RECEITA" data-kind-toggle <?= $tipo === 'RECEITA' ? 'checked' : '' ?>> Receita</label>
@@ -278,9 +313,96 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
       <p class="muted" data-donor-wait style="font-size:.82rem;margin:.15rem 0 .75rem">
         Selecione a conta bancária para liberar os dados do doador.
       </p>
+      <div class="grid grid-2">
+        <div class="field">
+          <label class="label">Tipo da doação (Conta+JE)</label>
+          <select class="select" name="donationType">
+            <option value="">— automático pela conta —</option>
+            <?php foreach (ElectoralRules::DONATION_TYPES as $code => $lab): ?>
+              <option value="<?= e($code) ?>" <?= $val('donationType') === $code ? 'selected' : '' ?>><?= e($lab) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="field">
+          <label class="label req">Espécie do recurso</label>
+          <select class="select" name="resourceSpecies" required>
+            <option value="">— selecionar —</option>
+            <?php foreach (RESOURCE_SPECIES as $code => $lab): ?>
+              <option value="<?= e($code) ?>" <?= $val('resourceSpecies') === $code ? 'selected' : '' ?>><?= e($lab) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-2">
+        <div class="field">
+          <label class="label">Identificador da espécie (PIX / cheque / boleto)</label>
+          <input class="input" name="speciesRef" value="<?= e($val('speciesRef')) ?>" placeholder="Ex.: E2E PIX, nº cheque, autorização">
+        </div>
+        <div class="field">
+          <label class="label">Banco da espécie (se cheque/TED)</label>
+          <input class="input" name="speciesBank" value="<?= e($val('speciesBank')) ?>" placeholder="Nome ou código do banco">
+        </div>
+      </div>
       <div class="field">
-        <label class="label">Recibo</label>
-        <input class="input" name="receiptNumber" value="<?= e($val('receiptNumber')) ?>">
+        <label class="label">Fonte / classificação (dashboard)</label>
+        <select class="select" name="source">
+          <option value="">— automático (origem da conta) —</option>
+          <?php foreach (REVENUE_SOURCES as $code => $lab): ?>
+            <option value="<?= e($code) ?>" <?= $val('source') === $code ? 'selected' : '' ?>><?= e($lab) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="row-actions" style="flex-wrap:wrap;gap:.65rem;margin:.25rem 0 .75rem">
+        <label class="deposit-who-option"><input type="checkbox" name="emitReceipt" value="1" <?= $val('emitReceipt') ? 'checked' : '' ?>><span>Emitir recibo eleitoral</span></label>
+        <label class="deposit-who-option"><input type="checkbox" name="isFcc" value="1" <?= $val('isFcc') ? 'checked' : '' ?>><span>FCC (financiamento coletivo)</span></label>
+        <label class="deposit-who-option"><input type="checkbox" name="isInternet" value="1" <?= $val('isInternet') ? 'checked' : '' ?>><span>Recebida pela internet</span></label>
+        <label class="deposit-who-option"><input type="checkbox" name="isLoan" value="1" <?= $val('isLoan') ? 'checked' : '' ?>><span>Recursos próprios de empréstimo</span></label>
+      </div>
+      <div class="field">
+        <label class="label">Nº recibo eleitoral</label>
+        <input class="input" name="receiptNumber" value="<?= e($val('receiptNumber')) ?>" placeholder="Automático se marcar emissão">
+        <div class="muted" style="font-size:.78rem;margin-top:.25rem">Conta+JE §8.9 — para candidata/candidato a numeração é sequencial.</div>
+      </div>
+
+      <div class="panel nfe-launch-box" data-origin-donors>
+        <strong class="nfe-launch-title">Doadoras e doadores originários (Conta+JE §8.8)</strong>
+        <p class="muted" style="margin:.2rem 0 .55rem;font-size:.8rem;line-height:1.4">
+          Obrigatório quando a fonte for <em>Doações para Campanha</em> em Recursos de Partido / Outros Candidatos.
+          O total deve bater com o valor da doação.
+        </p>
+        <div class="stack" style="gap:.55rem">
+          <?php for ($oi = 0; $oi < 3; $oi++): ?>
+            <div class="grid grid-2">
+              <div class="field" style="margin:0">
+                <label class="label">CPF originário <?= $oi + 1 ?></label>
+                <input class="input" name="originDonors[cpf][]" data-mask="cpf" inputmode="numeric" placeholder="000.000.000-00">
+              </div>
+              <div class="field" style="margin:0">
+                <label class="label">Nome</label>
+                <input class="input" name="originDonors[name][]" placeholder="Nome completo">
+              </div>
+              <div class="field" style="margin:0">
+                <label class="label">Valor (R$)</label>
+                <input class="input" name="originDonors[amount][]" data-mask="money" inputmode="decimal" placeholder="0,00">
+              </div>
+              <div class="field" style="margin:0">
+                <label class="label">Espécie</label>
+                <select class="select" name="originDonors[species][]">
+                  <option value="">—</option>
+                  <?php foreach (RESOURCE_SPECIES as $code => $lab): ?>
+                    <option value="<?= e($code) ?>"><?= e($lab) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+            </div>
+          <?php endfor; ?>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Comprovante PDF (Conta+JE §8.10)</label>
+        <input class="input" type="file" name="proofPdf" accept="application/pdf,.pdf">
+        <div class="muted" style="font-size:.78rem;margin-top:.25rem">PDF até 10 MB — incluso no pacote de entrega ao Conta+JE.</div>
       </div>
     </div>
 
@@ -303,6 +425,62 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
             </option>
           <?php endforeach; ?>
         </select>
+      </div>
+
+      <div class="panel nfe-launch-box">
+        <strong class="nfe-launch-title">Detalhamento Conta+JE <span class="muted" style="font-weight:500">(lançamento)</span></strong>
+        <div class="grid grid-2">
+          <div class="field">
+            <label class="label">Quantidade</label>
+            <input class="input" name="quantity" inputmode="decimal" placeholder="1" value="<?= e($val('quantity')) ?>">
+          </div>
+          <div class="field">
+            <label class="label">Valor unitário</label>
+            <input class="input" name="unitValue" data-mask="money" inputmode="decimal" placeholder="0,00" value="<?= e($val('unitValue')) ?>">
+          </div>
+        </div>
+      </div>
+
+      <div class="panel nfe-launch-box">
+        <strong class="nfe-launch-title">Documento fiscal (Conta+JE §9)</strong>
+        <div class="grid grid-2">
+          <div class="field">
+            <label class="label">Espécie do documento</label>
+            <input class="input" name="docSpecies" value="<?= e($val('docSpecies')) ?>" placeholder="NF-e, cupom, recibo…">
+          </div>
+          <div class="field">
+            <label class="label">Nº do documento</label>
+            <input class="input" name="docNumber" value="<?= e($val('docNumber', $val('numeroNf'))) ?>" placeholder="Número da nota/recibo">
+          </div>
+        </div>
+      </div>
+
+      <div class="panel nfe-launch-box">
+        <strong class="nfe-launch-title">Dados do pagamento (Conta+JE §9.3)</strong>
+        <div class="grid grid-2">
+          <div class="field">
+            <label class="label req">Forma de pagamento</label>
+            <select class="select" name="paymentMethod" required>
+              <option value="">— selecionar —</option>
+              <?php foreach (PAYMENT_METHODS as $code => $lab): ?>
+                <option value="<?= e($code) ?>" <?= $val('paymentMethod') === $code ? 'selected' : '' ?>><?= e($lab) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="field">
+            <label class="label">Data do pagamento</label>
+            <input class="input" type="date" name="paymentDate" value="<?= e($val('paymentDate', $oldDate)) ?>">
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Fonte do recurso do pagamento</label>
+          <select class="select" name="paymentResourceOrigin">
+            <option value="">— mesma da conta bancária —</option>
+            <?php foreach (BANK_RESOURCE_ORIGINS as $code => $lab): ?>
+              <option value="<?= e($code) ?>" <?= $val('paymentResourceOrigin') === $code ? 'selected' : '' ?>><?= e($lab) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
       </div>
 
       <div class="panel nfe-launch-box">
@@ -331,6 +509,12 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
             <input class="input" name="numeroNf" inputmode="numeric" value="<?= e($val('numeroNf')) ?>">
           </div>
         </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Comprovante PDF (Conta+JE §9)</label>
+        <input class="input" type="file" name="proofPdf" accept="application/pdf,.pdf">
+        <div class="muted" style="font-size:.78rem;margin-top:.25rem">PDF até 10 MB — incluso no pacote de entrega ao Conta+JE.</div>
       </div>
 
       <div class="grid grid-2">

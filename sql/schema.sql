@@ -1,4 +1,4 @@
--- POLLICONTAS — schema MySQL (cPanel)
+-- CONTAS — schema MySQL (cPanel) · contas.synetiq.com.br
 -- Charset: utf8mb4
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -56,6 +56,16 @@ CREATE TABLE `Campaign` (
     `nationality` VARCHAR(191) NULL,
     `website` VARCHAR(191) NULL,
     `photoUrl` VARCHAR(191) NULL,
+    `electoralTitle` VARCHAR(191) NULL,
+    `phone` VARCHAR(64) NULL,
+    `email` VARCHAR(191) NULL,
+    `addressZip` VARCHAR(16) NULL,
+    `addressStreet` VARCHAR(191) NULL,
+    `addressNumber` VARCHAR(32) NULL,
+    `addressComplement` VARCHAR(191) NULL,
+    `addressDistrict` VARCHAR(191) NULL,
+    `addressCity` VARCHAR(191) NULL,
+    `addressState` VARCHAR(8) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
 
@@ -104,8 +114,13 @@ CREATE TABLE `BankAccount` (
     `bankName` VARCHAR(191) NOT NULL,
     `bankCode` VARCHAR(191) NOT NULL,
     `agency` VARCHAR(191) NOT NULL,
+    `agencyDv` VARCHAR(8) NULL,
     `accountNumber` VARCHAR(191) NOT NULL,
+    `accountDv` VARCHAR(8) NULL,
     `accountType` VARCHAR(191) NOT NULL DEFAULT 'Corrente',
+    `resourceOrigin` VARCHAR(64) NULL,
+    `openedAt` DATE NULL,
+    `racNumber` VARCHAR(64) NULL,
     `balance` DOUBLE NOT NULL DEFAULT 0,
     `depositCpf` BOOLEAN NOT NULL DEFAULT true,
     `depositCnpj` BOOLEAN NOT NULL DEFAULT true,
@@ -167,6 +182,13 @@ CREATE TABLE `Revenue` (
     `description` TEXT NULL,
     `receiptNumber` VARCHAR(191) NULL,
     `bankAccountId` VARCHAR(191) NULL,
+    `donationType` VARCHAR(64) NULL,
+    `resourceOrigin` VARCHAR(64) NULL,
+    `resourceSpecies` VARCHAR(64) NULL,
+    `emitReceipt` BOOLEAN NOT NULL DEFAULT false,
+    `isFcc` BOOLEAN NOT NULL DEFAULT false,
+    `isInternet` BOOLEAN NOT NULL DEFAULT false,
+    `isLoan` BOOLEAN NOT NULL DEFAULT false,
     `createdById` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
@@ -174,6 +196,30 @@ CREATE TABLE `Revenue` (
     INDEX `Revenue_campaignId_idx`(`campaignId`),
     INDEX `Revenue_source_idx`(`source`),
     INDEX `Revenue_donorCpf_idx`(`donorCpf`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Representative` (
+    `id` VARCHAR(191) NOT NULL,
+    `campaignId` VARCHAR(191) NOT NULL,
+    `role` VARCHAR(64) NOT NULL,
+    `name` VARCHAR(191) NOT NULL,
+    `cpf` VARCHAR(32) NULL,
+    `email` VARCHAR(191) NULL,
+    `phone` VARCHAR(64) NULL,
+    `oabUf` VARCHAR(8) NULL,
+    `oabNumber` VARCHAR(64) NULL,
+    `crcUf` VARCHAR(8) NULL,
+    `crcNumber` VARCHAR(64) NULL,
+    `roleOther` VARCHAR(191) NULL,
+    `active` BOOLEAN NOT NULL DEFAULT true,
+    `notes` TEXT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+
+    INDEX `Representative_campaignId_idx`(`campaignId`),
+    INDEX `Representative_role_idx`(`role`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -202,6 +248,11 @@ CREATE TABLE `Expense` (
     `installmentGroupId` VARCHAR(191) NULL,
     `installmentNumber` INT NULL,
     `installmentCount` INT NULL,
+    `paymentMethod` VARCHAR(64) NULL,
+    `paymentDate` DATE NULL,
+    `paymentResourceOrigin` VARCHAR(64) NULL,
+    `quantity` DOUBLE NULL,
+    `unitValue` DOUBLE NULL,
     `createdById` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
@@ -388,6 +439,9 @@ CREATE TABLE `AuditLog` (
 
 -- AddForeignKey
 ALTER TABLE `BankAccount` ADD CONSTRAINT `BankAccount_campaignId_fkey` FOREIGN KEY (`campaignId`) REFERENCES `Campaign`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Representative` ADD CONSTRAINT `Representative_campaignId_fkey` FOREIGN KEY (`campaignId`) REFERENCES `Campaign`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `AccountMapping` ADD CONSTRAINT `AccountMapping_bankAccountId_fkey` FOREIGN KEY (`bankAccountId`) REFERENCES `BankAccount`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

@@ -16,7 +16,7 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
 <div class="page-manual animate-rise">
   <header class="manual-hero panel">
     <div>
-      <div class="manual-kicker">Guia rápido · POLLICONTAS</div>
+      <div class="manual-kicker">Guia rápido · CONTAS</div>
       <h2 class="display" style="margin:.2rem 0 .45rem">Manual de configurações iniciais</h2>
       <p class="muted" style="margin:0;max-width:48rem;line-height:1.5">
         Siga estes passos na ordem para o sistema funcionar do zero. Em cada etapa: <strong>onde clicar</strong>,
@@ -57,7 +57,7 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
       </div>
     </div>
     <figure class="manual-shot">
-      <img src="<?= e($img('01-login.jpg')) ?>" alt="Tela de login do POLLICONTAS" width="1360" height="860" loading="lazy">
+      <img src="<?= e($img('01-login.jpg')) ?>" alt="Tela de login do CONTAS" width="1360" height="860" loading="lazy">
       <figcaption>Tela de login</figcaption>
     </figure>
     <div class="manual-actions">
@@ -430,7 +430,7 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
   <section class="panel" id="instalar-app">
     <h3 class="display" style="margin-top:0">Instalar como aplicativo (PWA)</h3>
     <p class="muted" style="line-height:1.45">
-      O POLLICONTAS pode ser instalado na tela inicial do celular ou como app no computador.
+      O CONTAS pode ser instalado na tela inicial do celular ou como app no computador.
       Funciona em tela cheia (sem barra do navegador) e abre mais rápido.
     </p>
     <div class="manual-actions">
@@ -452,20 +452,48 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
   </section>
 
   <section class="panel manual-checklist">
-    <h3 class="display" style="margin-top:0">Checklist mínimo para funcionar</h3>
+    <h3 class="display" style="margin-top:0">Checklist mínimo Conta+JE / TSE 2026</h3>
     <ol class="manual-check">
       <li>Login Master</li>
-      <li>Campanha + foto salvos</li>
-      <li>Pelo menos 1 conta bancária</li>
-      <li>Vínculos de receita/despesa configurados</li>
-      <li>Pelo menos 1 fornecedor (para despesas)</li>
-      <li>Saldo inicial ajustado (se necessário)</li>
-      <li>Primeiro lançamento de teste</li>
+      <li>Campanha + foto + endereço/contatos (qualificação)</li>
+      <li>Contas bancárias com fonte: Doações, Fundo Partidário e/ou FEFC</li>
+      <li>Representantes legais (advogado OAB + contabilista CRC)</li>
+      <li>Vínculos categoria/fonte → conta</li>
+      <li>Fornecedores para despesas com documento fiscal</li>
+      <li>Receitas com tipo, espécie e recibo eleitoral quando couber</li>
+      <li>Gerar relatórios Conta+JE (demonstrativo, despesas, recibos, RF 72h)</li>
+      <li>Verificar inconsistências (impeditivas zeradas)</li>
     </ol>
     <div class="row-actions" style="margin-top:1rem">
       <a class="btn btn-primary" href="<?= e(url_path('admin/wizard.php')) ?>">Ir para Campanha / foto</a>
-      <a class="btn btn-secondary" href="<?= e(url_path('admin/index.php')) ?>">Abrir Dashboard</a>
+      <a class="btn btn-secondary" href="<?= e(url_path('admin/relatorios.php')) ?>">Relatórios</a>
+      <a class="btn btn-secondary" href="<?= e(url_path('admin/inconsistencias.php')) ?>">Ver inconsistências</a>
+      <a class="btn btn-ghost" href="<?= e(ElectoralRules::MANUAL_URL) ?>" target="_blank" rel="noopener">Manual Conta+JE (PDF)</a>
+      <a class="btn btn-ghost" href="<?= e(url_path('admin/base-legal.php')) ?>">Base TRE-GO 2026</a>
     </div>
   </section>
+
+  <section class="panel">
+    <h3 class="display" style="margin-top:0">Base legal 2026</h3>
+    <ul class="manual-check" style="list-style:disc">
+      <?php foreach (ElectoralRules::LEGAL_BASIS as $item): ?>
+        <li><?= e($item) ?></li>
+      <?php endforeach; ?>
+    </ul>
+    <p class="muted" style="line-height:1.45">
+      O CONTAS organiza a movimentação interna da campanha alinhada ao Conta+JE.
+      A <strong>entrega oficial</strong> à Justiça Eleitoral continua sendo feita no sistema Conta+JE do TSE.
+    </p>
+  </section>
+
+  <footer class="panel" style="text-align:center">
+    <p class="muted" style="margin:0 0 .65rem;font-size:.85rem">
+      <?= e(APP_NAME) ?> — <?= e(APP_TAGLINE) ?>. Sistema independente desenvolvido por
+      <a href="<?= e(APP_VENDOR_URL) ?>" target="_blank" rel="noopener noreferrer"><strong><?= e(APP_VENDOR) ?></strong></a>.
+    </p>
+    <a href="<?= e(APP_VENDOR_URL) ?>" target="_blank" rel="noopener noreferrer" title="<?= e(APP_VENDOR . ' — ' . APP_VENDOR_TAGLINE) ?>">
+      <img src="<?= e(asset('assets/img/synetiq-wordmark-sm.png')) ?>" alt="<?= e(APP_VENDOR) ?>" width="160" height="52" loading="lazy">
+    </a>
+  </footer>
 </div>
 <?php require dirname(__DIR__) . '/templates/admin_layout_end.php'; ?>

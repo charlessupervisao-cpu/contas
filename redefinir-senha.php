@@ -42,7 +42,7 @@ if (request_method() === 'POST') {
 <body class="login-shell" data-base="<?= e(rtrim(env('APP_BASE', '') ?: '', '/')) ?>">
   <div class="login-card animate-rise">
     <div class="login-brand">
-      <img src="<?= e(asset('assets/img/pollicontas-logo.png')) ?>" alt="<?= e(APP_NAME) ?>" width="52" height="52">
+      <img src="<?= e(asset('assets/img/contas-logo.png')) ?>" alt="<?= e(APP_NAME) ?>" width="52" height="52">
       <div>
         <div class="display"><?= e(APP_NAME) ?></div>
         <div class="muted">Nova senha</div>

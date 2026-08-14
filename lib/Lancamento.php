@@ -65,7 +65,14 @@ final class Lancamento
             'VEICULOS' => 3, 'COMBUSTIVEIS' => 3, 'CABOS_ELEITORAIS' => 1,
         ];
         $revenueDefaults = [
-            'DOADOR_PF' => 0, 'FUNDO_PARTIDARIO' => 1, 'VAQUINHA_ELEITORAL' => 2,
+            'RECURSOS_PF' => 0,
+            'RECURSOS_PROPRIOS' => 0,
+            'FUNDO_PARTIDARIO' => 1,
+            'FEFC' => 2,
+            'FCC' => 0,
+            'RECURSOS_PARTIDO' => 1,
+            'RECURSOS_OUTROS_CANDIDATOS' => 0,
+            'RONI' => 0,
         ];
 
         $items = [];
@@ -74,6 +81,9 @@ final class Lancamento
             $items[] = ['kind' => 'EXPENSE_CATEGORY', 'code' => $code, 'bankAccountId' => $a($idx)];
         }
         foreach ($revenueDefaults as $code => $idx) {
+            if (!isset(REVENUE_SOURCES[$code])) {
+                continue;
+            }
             $items[] = ['kind' => 'REVENUE_SOURCE', 'code' => $code, 'bankAccountId' => $a($idx)];
         }
         self::upsertMappings($campaignId, $items);
@@ -186,37 +196,147 @@ final class Lancamento
             }
         }
 
-        // Fonte do gráfico: conta vinculada (Fundo/Vaquinha) tem prioridade sobre CPF/CNPJ.
+        // Fonte Conta+JE: origem da conta bancária tem prioridade; depois vínculos; depois documento.
         $source = self::resolveRevenueSource(
             $pdo,
             (string) $campaign['id'],
             (string) $account['id'],
             (string) ($account['label'] ?? ''),
-            $docType
+            $docType,
+            (string) ($account['resourceOrigin'] ?? ''),
+            (string) ($input['source'] ?? '')
         );
-        // Deputado estadual: não há doação de pessoa jurídica (CNPJ só em Fundo/Vaquinha).
-        if ($source === 'DOADOR_PJ') {
+        // Deputado estadual: doação direta de PJ só é válida em contas de Fundo/FEFC/partido.
+        if ($source === 'DOADOR_PJ' || ($docType === 'CNPJ' && in_array($source, ['RECURSOS_PF', 'RECURSOS_PROPRIOS'], true))) {
             return [
                 'ok' => false,
-                'error' => 'Não é permitido receber doação de pessoa jurídica. Use CPF (doador PF) ou uma conta vinculada a Fundo Partidário / Vaquinha.',
+                'error' => 'Não é permitido receber doação direta de pessoa jurídica nesta conta. Use conta de Fundo Partidário / FEFC ou registre como Recursos de Partido Político.',
             ];
         }
 
-        $description = trim((string) ($input['description'] ?? '')) ?: REVENUE_SOURCES[$source];
+        $donationType = (string) ($input['donationType'] ?? '');
+        if ($donationType === '' || !isset(ElectoralRules::DONATION_TYPES[$donationType])) {
+            $donationType = match ($source) {
+                'RECURSOS_PROPRIOS' => 'RECURSOS_PROPRIOS',
+                'RECURSOS_PARTIDO', 'FUNDO_PARTIDARIO', 'FEFC' => 'RECURSOS_PARTIDO',
+                'RECURSOS_OUTROS_CANDIDATOS' => 'RECURSOS_OUTROS_CANDIDATOS',
+                'RONI' => 'RONI',
+                default => 'RECURSOS_PF',
+            };
+        }
+        $resourceSpecies = strtoupper(trim((string) ($input['resourceSpecies'] ?? '')));
+        if ($resourceSpecies !== '' && !isset(RESOURCE_SPECIES[$resourceSpecies])) {
+            $resourceSpecies = '';
+        }
+        $resourceOrigin = (string) ($account['resourceOrigin'] ?? '');
+        if ($resourceOrigin === '' && in_array($source, ['FUNDO_PARTIDARIO', 'FEFC'], true)) {
+            $resourceOrigin = $source;
+        }
+        $emitReceipt = !empty($input['emitReceipt']) ? 1 : 0;
+        $isFcc = !empty($input['isFcc']) || $source === 'FCC' ? 1 : 0;
+        $isInternet = !empty($input['isInternet']) ? 1 : 0;
+        $isLoan = !empty($input['isLoan']) ? 1 : 0;
+        if ($isFcc) {
+            $source = 'FCC';
+        }
+        $speciesRef = trim((string) ($input['speciesRef'] ?? '')) ?: null;
+        $speciesBank = trim((string) ($input['speciesBank'] ?? '')) ?: null;
+        if ($resourceSpecies === '' && $donationType !== 'RONI') {
+            return ['ok' => false, 'error' => 'Informe a espécie do recurso (Conta+JE §8.11).'];
+        }
+        if (
+            $donationType !== 'RONI'
+            && in_array($resourceSpecies, ['PIX', 'CHEQUE', 'TRANSFERENCIA', 'BOLETO'], true)
+            && ($speciesRef === null || $speciesRef === '')
+        ) {
+            return ['ok' => false, 'error' => 'Informe o identificador da espécie (PIX / cheque / TED / boleto) — Conta+JE §8.11.'];
+        }
+        if ($resourceSpecies === 'CHEQUE' && ($speciesBank === null || $speciesBank === '')) {
+            return ['ok' => false, 'error' => 'Informe o banco do cheque (Conta+JE §8.11).'];
+        }
+
+        $description = trim((string) ($input['description'] ?? '')) ?: (REVENUE_SOURCES[$source] ?? 'Receita');
         $now = now_sql();
         $revenueId = cuid();
         $txId = cuid();
+        $receiptNumber = $input['receiptNumber'] ?? null;
+        if ($emitReceipt && ($receiptNumber === null || trim((string) $receiptNumber) === '')) {
+            $receiptNumber = self::nextElectoralReceipt($pdo, (string) $campaign['id']);
+        }
+
+        $proofPath = null;
+        if (!empty($input['_proofFile']) && is_array($input['_proofFile'])) {
+            try {
+                $proofPath = DocumentProofUpload::save($input['_proofFile'], 'receitas', $revenueId);
+            } catch (Throwable $e) {
+                return ['ok' => false, 'error' => $e->getMessage()];
+            }
+        }
+
+        $originDonors = self::parseOriginDonors($input['originDonors'] ?? []);
+        $needsOrigin = in_array($donationType, ['RECURSOS_PARTIDO', 'RECURSOS_OUTROS_CANDIDATOS'], true)
+            && in_array($resourceOrigin, ['DOACOES_CAMPANHA', ''], true);
+        if ($needsOrigin && $resourceOrigin === 'DOACOES_CAMPANHA' && !$originDonors) {
+            // Conta+JE §8.8 — recomendado; não bloqueia se origem da conta for FP/FEFC
+        }
+        if ($resourceOrigin === 'DOACOES_CAMPANHA' && in_array($donationType, ['RECURSOS_PARTIDO', 'RECURSOS_OUTROS_CANDIDATOS'], true) && !$originDonors) {
+            return ['ok' => false, 'error' => 'Informe as doadoras/doadores originários (Conta+JE §8.8) para fonte Doações para Campanha.'];
+        }
+        if ($originDonors) {
+            $sumOrigin = array_sum(array_map(static fn ($d) => (float) $d['amount'], $originDonors));
+            if (abs($sumOrigin - $amount) > 0.02) {
+                return ['ok' => false, 'error' => 'O total dos doadores originários deve bater com o valor da doação (Conta+JE §8.8).'];
+            }
+        }
 
         try {
             $pdo->beginTransaction();
-            $pdo->prepare(
-                'INSERT INTO `Revenue` (id, campaignId, source, donorName, donorCpf, amount, date, description, receiptNumber, bankAccountId, createdById, createdAt, updatedAt)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
-            )->execute([
-                $revenueId, $campaign['id'], $source,
-                $donorName, $donorDoc, $amount, $date, $description,
-                $input['receiptNumber'] ?? null, $account['id'], $userId, $now, $now,
-            ]);
+            $hasExtra = self::revenueHasElectoralColumns($pdo);
+            if ($hasExtra) {
+                try {
+                    $pdo->prepare(
+                        'INSERT INTO `Revenue` (id, campaignId, source, donationType, resourceOrigin, resourceSpecies, emitReceipt, isFcc, isInternet, isLoan, donorName, donorCpf, amount, date, description, receiptNumber, bankAccountId, speciesRef, speciesBank, proofPdfPath, createdById, createdAt, updatedAt)
+                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                    )->execute([
+                        $revenueId, $campaign['id'], $source, $donationType, $resourceOrigin ?: null, $resourceSpecies ?: null,
+                        $emitReceipt, $isFcc, $isInternet, $isLoan,
+                        $donorName, $donorDoc, $amount, $date, $description,
+                        $receiptNumber, $account['id'], $speciesRef, $speciesBank, $proofPath, $userId, $now, $now,
+                    ]);
+                } catch (Throwable) {
+                    $pdo->prepare(
+                        'INSERT INTO `Revenue` (id, campaignId, source, donationType, resourceOrigin, resourceSpecies, emitReceipt, isFcc, isInternet, isLoan, donorName, donorCpf, amount, date, description, receiptNumber, bankAccountId, createdById, createdAt, updatedAt)
+                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                    )->execute([
+                        $revenueId, $campaign['id'], $source, $donationType, $resourceOrigin ?: null, $resourceSpecies ?: null,
+                        $emitReceipt, $isFcc, $isInternet, $isLoan,
+                        $donorName, $donorDoc, $amount, $date, $description,
+                        $receiptNumber, $account['id'], $userId, $now, $now,
+                    ]);
+                }
+            } else {
+                $pdo->prepare(
+                    'INSERT INTO `Revenue` (id, campaignId, source, donorName, donorCpf, amount, date, description, receiptNumber, bankAccountId, createdById, createdAt, updatedAt)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                )->execute([
+                    $revenueId, $campaign['id'], $source,
+                    $donorName, $donorDoc, $amount, $date, $description,
+                    $receiptNumber, $account['id'], $userId, $now, $now,
+                ]);
+            }
+
+            foreach ($originDonors as $od) {
+                try {
+                    $pdo->prepare(
+                        'INSERT INTO `RevenueOriginDonor` (id, campaignId, revenueId, cpf, name, amount, resourceSpecies, createdAt)
+                         VALUES (?,?,?,?,?,?,?,?)'
+                    )->execute([
+                        cuid(), $campaign['id'], $revenueId, $od['cpf'], $od['name'], $od['amount'], $od['species'] ?: null, $now,
+                    ]);
+                } catch (Throwable) {
+                    break;
+                }
+            }
 
             $pdo->prepare('UPDATE `BankAccount` SET balance = balance + ?, updatedAt = ? WHERE id = ?')
                 ->execute([$amount, $now, $account['id']]);
@@ -226,7 +346,7 @@ final class Lancamento
                  VALUES (?,?,?,?,?,?,?,?,?,?,?)'
             )->execute([
                 $txId, $account['id'], $date, "Crédito — {$description}", $amount, 'CREDITO',
-                $input['receiptNumber'] ?? null, 'PENDENTE', $revenueId, $now, $now,
+                $receiptNumber, 'PENDENTE', $revenueId, $now, $now,
             ]);
 
             audit_log(
@@ -234,13 +354,16 @@ final class Lancamento
                 'LAUNCH',
                 'Revenue',
                 $revenueId,
-                sprintf('Receita %s R$ %.2f → %s · conciliação %s', REVENUE_SOURCES[$source], $amount, $account['label'], substr($txId, -6))
+                sprintf('Receita %s R$ %.2f → %s · conciliação %s', REVENUE_SOURCES[$source] ?? $source, $amount, $account['label'], substr($txId, -6))
             );
 
             $pdo->commit();
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
+            }
+            if ($proofPath) {
+                DocumentProofUpload::deletePrevious($proofPath);
             }
             return ['ok' => false, 'error' => 'Falha ao gravar receita: ' . $e->getMessage()];
         }
@@ -249,17 +372,95 @@ final class Lancamento
     }
 
     /**
-     * Classifica a receita para o dashboard (Receitas por fonte).
-     * Se a conta estiver vinculada a Fundo Partidário ou Vaquinha, usa essa fonte —
-     * mesmo quando o depósito veio com CPF/CNPJ do doador.
+     * @param mixed $raw
+     * @return list<array{cpf:string,name:string,amount:float,species:string}>
+     */
+    private static function parseOriginDonors(mixed $raw): array
+    {
+        if (!is_array($raw)) {
+            return [];
+        }
+        $out = [];
+        $cpfs = $raw['cpf'] ?? [];
+        $names = $raw['name'] ?? [];
+        $amounts = $raw['amount'] ?? [];
+        $species = $raw['species'] ?? [];
+        if (!is_array($cpfs)) {
+            return [];
+        }
+        foreach ($cpfs as $i => $cpfRaw) {
+            $cpf = only_digits((string) $cpfRaw);
+            $name = trim((string) ($names[$i] ?? ''));
+            $amt = parse_money_input((string) ($amounts[$i] ?? '0'));
+            $sp = strtoupper(trim((string) ($species[$i] ?? '')));
+            if ($cpf === '' && $name === '' && $amt <= 0) {
+                continue;
+            }
+            if (strlen($cpf) !== 11 || !is_valid_cpf($cpf)) {
+                continue;
+            }
+            if ($name === '' || $amt <= 0) {
+                continue;
+            }
+            $out[] = [
+                'cpf' => format_cpf_cnpj($cpf),
+                'name' => $name,
+                'amount' => $amt,
+                'species' => isset(RESOURCE_SPECIES[$sp]) ? $sp : '',
+            ];
+        }
+        return $out;
+    }
+
+    private static function revenueHasElectoralColumns(PDO $pdo): bool
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+        try {
+            $st = $pdo->query("SHOW COLUMNS FROM `Revenue` LIKE 'donationType'");
+            $cached = (bool) $st->fetch();
+        } catch (Throwable) {
+            $cached = false;
+        }
+        return $cached;
+    }
+
+    private static function nextElectoralReceipt(PDO $pdo, string $campaignId): string
+    {
+        try {
+            $st = $pdo->prepare(
+                "SELECT COUNT(*) AS c FROM `Revenue` WHERE campaignId=? AND emitReceipt=1 AND receiptNumber IS NOT NULL AND receiptNumber<>''"
+            );
+            $st->execute([$campaignId]);
+            $n = (int) $st->fetch()['c'] + 1;
+        } catch (Throwable) {
+            $st = $pdo->prepare('SELECT COUNT(*) AS c FROM `Revenue` WHERE campaignId=? AND receiptNumber IS NOT NULL AND receiptNumber<>\'\'');
+            $st->execute([$campaignId]);
+            $n = (int) $st->fetch()['c'] + 1;
+        }
+        return sprintf('RE-%s-%04d', ELECTION_YEAR, $n);
+    }
+
+    /**
+     * Classifica a receita para o dashboard (Receitas por fonte) — Conta+JE.
      */
     public static function resolveRevenueSource(
         PDO $pdo,
         string $campaignId,
         string $bankAccountId,
         string $accountLabel,
-        string $docType
+        string $docType,
+        string $resourceOrigin = '',
+        string $explicitSource = ''
     ): string {
+        if ($explicitSource !== '' && isset(REVENUE_SOURCES[$explicitSource])) {
+            return $explicitSource;
+        }
+        if ($resourceOrigin !== '') {
+            return ElectoralRules::revenueSourceFromBankOrigin($resourceOrigin, $docType);
+        }
         try {
             $st = $pdo->prepare(
                 "SELECT code FROM `AccountMapping`
@@ -267,25 +468,26 @@ final class Lancamento
             );
             $st->execute([$campaignId, $bankAccountId]);
             $codes = $st->fetchAll(PDO::FETCH_COLUMN);
-            if (in_array('FUNDO_PARTIDARIO', $codes, true)) {
-                return 'FUNDO_PARTIDARIO';
-            }
-            if (in_array('VAQUINHA_ELEITORAL', $codes, true)) {
-                return 'VAQUINHA_ELEITORAL';
+            foreach (['FEFC', 'FUNDO_PARTIDARIO', 'FCC', 'RECURSOS_PARTIDO', 'RECURSOS_PF', 'VAQUINHA_ELEITORAL'] as $prefer) {
+                if (in_array($prefer, $codes, true)) {
+                    return $prefer === 'VAQUINHA_ELEITORAL' ? 'FCC' : $prefer;
+                }
             }
         } catch (Throwable) {
-            // segue para fallback por nome / documento
         }
 
         $label = mb_strtolower($accountLabel);
-        if ($label !== '' && (str_contains($label, 'vaquinha') || str_contains($label, 'vakinha'))) {
-            return 'VAQUINHA_ELEITORAL';
+        if ($label !== '' && (str_contains($label, 'vaquinha') || str_contains($label, 'vakinha') || str_contains($label, 'fcc'))) {
+            return 'FCC';
+        }
+        if ($label !== '' && str_contains($label, 'fefc')) {
+            return 'FEFC';
         }
         if ($label !== '' && str_contains($label, 'fundo')) {
             return 'FUNDO_PARTIDARIO';
         }
 
-        return $docType === 'CNPJ' ? 'DOADOR_PJ' : 'DOADOR_PF';
+        return $docType === 'CNPJ' ? 'RECURSOS_PARTIDO' : 'RECURSOS_PF';
     }
 
     private static function createDespesa(PDO $pdo, array $campaign, array $account, array $input, string $userId, float $amount, string $date): array
@@ -315,6 +517,32 @@ final class Lancamento
         $unidadeArrecadadora = trim((string) ($input['unidadeArrecadadora'] ?? ''));
         $dsUe = trim((string) ($input['dsUe'] ?? ''));
         $nfeLink = trim((string) ($input['nfeLink'] ?? ''));
+        $paymentMethod = strtoupper(trim((string) ($input['paymentMethod'] ?? '')));
+        if ($paymentMethod !== '' && !isset(PAYMENT_METHODS[$paymentMethod])) {
+            $paymentMethod = '';
+        }
+        $paymentDateRaw = trim((string) ($input['paymentDate'] ?? ''));
+        $paymentDate = null;
+        if ($paymentDateRaw !== '') {
+            $paymentDate = preg_match('/^\d{4}-\d{2}-\d{2}/', $paymentDateRaw)
+                ? substr($paymentDateRaw, 0, 10)
+                : substr(parse_date_input($paymentDateRaw), 0, 10);
+        }
+        $paymentOrigin = trim((string) ($input['paymentResourceOrigin'] ?? ''));
+        if ($paymentOrigin !== '' && !isset(BANK_RESOURCE_ORIGINS[$paymentOrigin])) {
+            $paymentOrigin = (string) ($account['resourceOrigin'] ?? '');
+        }
+        if ($paymentOrigin === '') {
+            $paymentOrigin = (string) ($account['resourceOrigin'] ?? '');
+        }
+        $quantity = isset($input['quantity']) && $input['quantity'] !== '' ? (float) parse_money_input((string) $input['quantity']) : null;
+        $unitValue = isset($input['unitValue']) && $input['unitValue'] !== '' ? (float) parse_money_input((string) $input['unitValue']) : null;
+        $docSpecies = trim((string) ($input['docSpecies'] ?? '')) ?: null;
+        $docNumber = trim((string) ($input['docNumber'] ?? '')) ?: null;
+
+        // Conta+JE §9.3 — despesa paga exige forma de pagamento
+        $willPayImmediate = true; // may flip to FUTURA below; check after parts
+        $proofFile = (!empty($input['_proofFile']) && is_array($input['_proofFile'])) ? $input['_proofFile'] : null;
 
         $dataEmissao = null;
         if ($dataEmissaoRaw !== '') {
@@ -383,6 +611,30 @@ final class Lancamento
         $createdIds = [];
         $anyFuture = false;
 
+        $hasImmediatePay = false;
+        foreach ($parts as $part) {
+            $pd = substr((string) $part['date'], 0, 10);
+            if (!($installments > 1 || ($pd !== '' && $pd > $todayYmd))) {
+                $hasImmediatePay = true;
+                break;
+            }
+        }
+        if ($hasImmediatePay && $paymentMethod === '') {
+            return ['ok' => false, 'error' => 'Informe a forma de pagamento (Conta+JE §9.3) para despesas pagas.'];
+        }
+        if ($paymentDate !== null && $paymentDate < substr($date, 0, 10)) {
+            return ['ok' => false, 'error' => 'A data de pagamento não pode ser anterior à contratação (Conta+JE §9.3).'];
+        }
+
+        $sharedProof = null;
+        if ($proofFile) {
+            try {
+                $sharedProof = DocumentProofUpload::save($proofFile, 'despesas', cuid());
+            } catch (Throwable $e) {
+                return ['ok' => false, 'error' => $e->getMessage()];
+            }
+        }
+
         try {
             $pdo->beginTransaction();
 
@@ -405,29 +657,97 @@ final class Lancamento
                     $status = 'PAGA';
                 }
 
-                $pdo->prepare(
-                    'INSERT INTO `Expense` (
-                        id, campaignId, category, supplierName, supplierDoc, supplierId, description, amount, date, status,
-                        naturezaOp, dataEmissao, numeroNf,
-                        unidadeArrecadadora, dsUe, nfeLink, importSource, bankAccountId, caboId, vehicleId,
-                        installmentGroupId, installmentNumber, installmentCount,
-                        createdById, createdAt, updatedAt
-                     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
-                )->execute([
-                    $expenseId, $campaign['id'], $category, $supplierName, $supplierDoc ?: null, $supplierId ?: null,
-                    $partDesc, $partAmount, $partDate, $status,
-                    $naturezaOp !== '' ? $naturezaOp : null,
-                    $dataEmissao,
-                    $numeroNf !== '' ? $numeroNf : null,
-                    $unidadeArrecadadora !== '' ? $unidadeArrecadadora : null,
-                    $dsUe !== '' ? $dsUe : null,
-                    $nfeLink !== '' ? $nfeLink : null,
-                    null,
-                    $account['id'],
-                    $input['caboId'] ?? null, $input['vehicleId'] ?? null,
-                    $groupId, $installments > 1 ? $n : null, $installments > 1 ? $installments : null,
-                    $userId, $now, $now,
-                ]);
+                try {
+                    $pdo->prepare(
+                        'INSERT INTO `Expense` (
+                            id, campaignId, category, supplierName, supplierDoc, supplierId, description, amount, date, status,
+                            naturezaOp, dataEmissao, numeroNf,
+                            unidadeArrecadadora, dsUe, nfeLink, importSource, bankAccountId, caboId, vehicleId,
+                            installmentGroupId, installmentNumber, installmentCount,
+                            paymentMethod, paymentDate, paymentResourceOrigin, quantity, unitValue,
+                            proofPdfPath, docSpecies, docNumber,
+                            createdById, createdAt, updatedAt
+                         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                    )->execute([
+                        $expenseId, $campaign['id'], $category, $supplierName, $supplierDoc ?: null, $supplierId ?: null,
+                        $partDesc, $partAmount, $partDate, $status,
+                        $naturezaOp !== '' ? $naturezaOp : null,
+                        $dataEmissao,
+                        $numeroNf !== '' ? $numeroNf : null,
+                        $unidadeArrecadadora !== '' ? $unidadeArrecadadora : null,
+                        $dsUe !== '' ? $dsUe : null,
+                        $nfeLink !== '' ? $nfeLink : null,
+                        null,
+                        $account['id'],
+                        $input['caboId'] ?? null, $input['vehicleId'] ?? null,
+                        $groupId, $installments > 1 ? $n : null, $installments > 1 ? $installments : null,
+                        $paymentMethod !== '' ? $paymentMethod : null,
+                        $paymentDate,
+                        $paymentOrigin !== '' ? $paymentOrigin : null,
+                        $quantity,
+                        $unitValue,
+                        $sharedProof,
+                        $docSpecies,
+                        $docNumber,
+                        $userId, $now, $now,
+                    ]);
+                } catch (Throwable) {
+                    try {
+                        $pdo->prepare(
+                            'INSERT INTO `Expense` (
+                                id, campaignId, category, supplierName, supplierDoc, supplierId, description, amount, date, status,
+                                naturezaOp, dataEmissao, numeroNf,
+                                unidadeArrecadadora, dsUe, nfeLink, importSource, bankAccountId, caboId, vehicleId,
+                                installmentGroupId, installmentNumber, installmentCount,
+                                paymentMethod, paymentDate, paymentResourceOrigin, quantity, unitValue,
+                                createdById, createdAt, updatedAt
+                             ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                        )->execute([
+                            $expenseId, $campaign['id'], $category, $supplierName, $supplierDoc ?: null, $supplierId ?: null,
+                            $partDesc, $partAmount, $partDate, $status,
+                            $naturezaOp !== '' ? $naturezaOp : null,
+                            $dataEmissao,
+                            $numeroNf !== '' ? $numeroNf : null,
+                            $unidadeArrecadadora !== '' ? $unidadeArrecadadora : null,
+                            $dsUe !== '' ? $dsUe : null,
+                            $nfeLink !== '' ? $nfeLink : null,
+                            null,
+                            $account['id'],
+                            $input['caboId'] ?? null, $input['vehicleId'] ?? null,
+                            $groupId, $installments > 1 ? $n : null, $installments > 1 ? $installments : null,
+                            $paymentMethod !== '' ? $paymentMethod : null,
+                            $paymentDate,
+                            $paymentOrigin !== '' ? $paymentOrigin : null,
+                            $quantity,
+                            $unitValue,
+                            $userId, $now, $now,
+                        ]);
+                    } catch (Throwable) {
+                        $pdo->prepare(
+                            'INSERT INTO `Expense` (
+                                id, campaignId, category, supplierName, supplierDoc, supplierId, description, amount, date, status,
+                                naturezaOp, dataEmissao, numeroNf,
+                                unidadeArrecadadora, dsUe, nfeLink, importSource, bankAccountId, caboId, vehicleId,
+                                installmentGroupId, installmentNumber, installmentCount,
+                                createdById, createdAt, updatedAt
+                             ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                        )->execute([
+                            $expenseId, $campaign['id'], $category, $supplierName, $supplierDoc ?: null, $supplierId ?: null,
+                            $partDesc, $partAmount, $partDate, $status,
+                            $naturezaOp !== '' ? $naturezaOp : null,
+                            $dataEmissao,
+                            $numeroNf !== '' ? $numeroNf : null,
+                            $unidadeArrecadadora !== '' ? $unidadeArrecadadora : null,
+                            $dsUe !== '' ? $dsUe : null,
+                            $nfeLink !== '' ? $nfeLink : null,
+                            null,
+                            $account['id'],
+                            $input['caboId'] ?? null, $input['vehicleId'] ?? null,
+                            $groupId, $installments > 1 ? $n : null, $installments > 1 ? $installments : null,
+                            $userId, $now, $now,
+                        ]);
+                    }
+                }
 
                 $txId = cuid();
                 $docRef = $numeroNf !== '' ? ('NF ' . $numeroNf) : null;

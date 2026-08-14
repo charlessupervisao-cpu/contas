@@ -2,7 +2,7 @@
 require_once dirname(__DIR__) . '/bootstrap.php';
 $user = Auth::requireLogin('diario');
 $activeModule = 'diario';
-$pageTitle = 'Diário do dia';
+$pageTitle = '12 · Diário do dia';
 $date = (string) get('date', date('Y-m-d'));
 $day = Metrics::getDailyActivity($date);
 $s = $day['summary'];

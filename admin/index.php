@@ -138,6 +138,49 @@ require dirname(__DIR__) . '/templates/admin_layout_start.php';
     </div>
   </header>
 
+  <?php
+    $issueCount = 0;
+    $impedCount = 0;
+    try {
+        if (class_exists('ElectoralRules')) {
+            $dashIssues = ElectoralRules::checkInconsistencies($camp);
+            $issueCount = count($dashIssues);
+            foreach ($dashIssues as $di) {
+                if (($di['level'] ?? '') === 'IMPEDITIVA') {
+                    $impedCount++;
+                }
+            }
+        }
+    } catch (Throwable) {
+        $dashIssues = [];
+    }
+    $tetoGo = class_exists('ElectoralRules')
+        ? ElectoralRules::spendLimitForOffice((string) ($camp['office'] ?? DEFAULT_OFFICE))
+        : DEFAULT_LEGAL_SPEND_LIMIT;
+  ?>
+  <div class="panel animate-rise" style="margin:0 0 1rem;border-left:4px solid var(--accent, #0f766e)">
+    <div class="fin-kicker" style="margin:0">Conformidade · Conta+JE / TRE-GO 2026 · build <?= e(APP_BUILD) ?></div>
+    <div style="display:flex;flex-wrap:wrap;gap:.75rem 1.25rem;align-items:flex-start;justify-content:space-between;margin-top:.35rem">
+      <div style="max-width:36rem;line-height:1.45">
+        <strong>Base oficial Goiás</strong> aplicada aos limites, contas e prazos.
+        Teto do cargo: <strong><?= e(money_br((float) ($tetoGo ?? DEFAULT_LEGAL_SPEND_LIMIT))) ?></strong>.
+        <?php if ($impedCount > 0): ?>
+          <span class="badge badge-danger" style="margin-left:.35rem"><?= (int) $impedCount ?> impeditiva(s)</span>
+        <?php elseif ($issueCount > 0): ?>
+          <span class="badge badge-warn" style="margin-left:.35rem"><?= (int) $issueCount ?> pendência(s)</span>
+        <?php else: ?>
+          <span class="badge badge-ok" style="margin-left:.35rem">sem impeditivas</span>
+        <?php endif; ?>
+      </div>
+      <div class="row-actions" style="gap:.4rem;flex-wrap:wrap">
+        <a class="btn btn-primary" href="<?= e(url_path('admin/entrega.php')) ?>">Entrega Conta+JE / TSE</a>
+        <a class="btn btn-secondary" href="<?= e(url_path('admin/relatorios.php')) ?>">Relatórios</a>
+        <a class="btn btn-secondary" href="<?= e(url_path('admin/inconsistencias.php')) ?>">Inconsistências</a>
+        <a class="btn btn-ghost" href="<?= e(url_path('admin/base-legal.php')) ?>">Base legal TRE-GO</a>
+      </div>
+    </div>
+  </div>
+
   <!-- 1. VISÃO GERAL — 5 a 8 indicadores -->
   <div class="fin-zone">
     <div class="fin-zone-ribbon"><span>1</span> Visão geral · saúde financeira</div>

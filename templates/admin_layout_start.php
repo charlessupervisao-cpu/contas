@@ -8,6 +8,9 @@ $flash = flash_get();
 $primaryMods = array_values(array_filter(MODULES, static fn ($m) => ($m['group'] ?? '') === 'primary'));
 $opsMods = array_values(array_filter(MODULES, static fn ($m) => ($m['group'] ?? '') === 'ops'));
 $configMods = array_values(array_filter(MODULES, static fn ($m) => ($m['group'] ?? '') === 'config'));
+usort($configMods, static function (array $a, array $b): int {
+    return ((int) ($a['setupOrder'] ?? 999)) <=> ((int) ($b['setupOrder'] ?? 999));
+});
 $showConfig = false;
 $configOpen = false;
 foreach ($configMods as $cm) {
@@ -34,13 +37,14 @@ foreach ($configMods as $cm) {
   <aside class="sidebar">
     <div class="sidebar-top">
       <div class="sidebar-brand-block">
-        <img src="<?= e(asset('assets/img/pollicontas-logo.png')) ?>" alt="<?= e(APP_NAME) ?>" width="46" height="46">
+        <img src="<?= e(asset('assets/img/contas-logo.png')) ?>" alt="<?= e(APP_NAME) ?>" width="46" height="46">
         <div>
           <div class="display"><?= e(APP_NAME) ?></div>
-          <div class="muted">Prestação de contas · <?= e((string) ELECTION_YEAR) ?></div>
+          <div class="muted">Conta+JE · TSE <?= (int) ELECTION_YEAR ?></div>
         </div>
       </div>
       <nav aria-label="Menu principal">
+        <span class="nav-sep-label">Prestação Conta+JE</span>
         <?php foreach ($primaryMods as $mod): ?>
           <?php if (!in_array($user['role'], $mod['roles'], true)) continue; ?>
           <a class="<?= $activeModule === $mod['id'] ? 'active' : '' ?>" href="<?= e(url_path(ltrim($mod['href'], '/'))) ?>">
@@ -56,14 +60,16 @@ foreach ($configMods as $cm) {
           </a>
         <?php endforeach; ?>
 
-        <div class="nav-sep" role="separator" aria-hidden="true"></div>
-
-        <?php foreach ($opsMods as $mod): ?>
-          <?php if (!in_array($user['role'], $mod['roles'], true)) continue; ?>
-          <a class="<?= $activeModule === $mod['id'] ? 'active' : '' ?>" href="<?= e(url_path(ltrim($mod['href'], '/'))) ?>">
-            <?= e($mod['label']) ?>
-          </a>
-        <?php endforeach; ?>
+        <?php if ($opsMods): ?>
+          <div class="nav-sep" role="separator" aria-hidden="true"></div>
+          <span class="nav-sep-label">Operações</span>
+          <?php foreach ($opsMods as $mod): ?>
+            <?php if (!in_array($user['role'], $mod['roles'], true)) continue; ?>
+            <a class="<?= $activeModule === $mod['id'] ? 'active' : '' ?>" href="<?= e(url_path(ltrim($mod['href'], '/'))) ?>">
+              <?= e($mod['label']) ?>
+            </a>
+          <?php endforeach; ?>
+        <?php endif; ?>
 
         <a href="<?= e(url_path('logout.php')) ?>" class="nav-logout">Sair</a>
       </nav>
@@ -75,6 +81,7 @@ foreach ($configMods as $cm) {
         <details class="nav-accordion" <?= $configOpen ? 'open' : '' ?>>
           <summary class="nav-accordion-summary">Configurações</summary>
           <div class="nav-accordion-body">
+            <div class="nav-config-hint">Cadastre nesta ordem (1 → 12)</div>
             <?php foreach ($configMods as $mod): ?>
               <?php if (!in_array($user['role'], $mod['roles'], true)) continue; ?>
               <a class="nav-config <?= ($mod['id'] ?? '') === 'manual' ? 'nav-manual' : '' ?> <?= $activeModule === $mod['id'] ? 'active' : '' ?>"
@@ -86,9 +93,10 @@ foreach ($configMods as $cm) {
         </details>
       <?php endif; ?>
 
-      <a class="sidebar-brand" href="https://www.synetiq.com.br" target="_blank" rel="noopener noreferrer" title="SynetIQ — Soluções Digitais Inteligentes">
-        <img src="<?= e(asset('assets/img/synetiq-wordmark-sm.png')) ?>" alt="SynetIQ — Soluções Digitais Inteligentes" width="200" height="65" loading="lazy">
+      <a class="sidebar-brand" href="<?= e(APP_VENDOR_URL) ?>" target="_blank" rel="noopener noreferrer" title="<?= e(APP_VENDOR . ' — ' . APP_VENDOR_TAGLINE) ?>">
+        <img src="<?= e(asset('assets/img/synetiq-wordmark-sm.png')) ?>" alt="<?= e(APP_VENDOR . ' — ' . APP_VENDOR_TAGLINE) ?>" width="200" height="65" loading="lazy">
       </a>
+      <div class="sidebar-vendor-note muted">Desenvolvido por <?= e(APP_VENDOR) ?></div>
     </div>
   </aside>
   <div>

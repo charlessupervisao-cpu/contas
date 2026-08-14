@@ -8,6 +8,9 @@ load_env($ROOT);
 
 require_once $ROOT . '/lib/Helpers.php';
 require_once $ROOT . '/lib/Constants.php';
+require_once $ROOT . '/lib/ElectoralRules.php';
+require_once $ROOT . '/lib/Reports.php';
+require_once $ROOT . '/lib/ContaJeExport.php';
 require_once $ROOT . '/lib/Validators.php';
 require_once $ROOT . '/lib/Permissions.php';
 require_once $ROOT . '/lib/Database.php';
@@ -21,6 +24,7 @@ require_once $ROOT . '/lib/Metrics.php';
 require_once $ROOT . '/lib/Demo.php';
 require_once $ROOT . '/lib/PhotoUpload.php';
 require_once $ROOT . '/lib/ContractPdfUpload.php';
+require_once $ROOT . '/lib/DocumentProofUpload.php';
 require_once $ROOT . '/lib/Schema.php';
 require_once $ROOT . '/lib/TseFornecedores.php';
 require_once $ROOT . '/lib/TseNfeCsv.php';

@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/bootstrap.php';
 
 $user = Auth::requireLogin('usuarios');
 $activeModule = 'usuarios';
-$pageTitle = 'Usuários / Perfis';
+$pageTitle = '11 · Administrar acessos';
 $pdo = Database::pdo();
 $canWrite = can_launch($user['role']);
 $errors = [];

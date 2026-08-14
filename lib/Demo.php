@@ -8,10 +8,10 @@ final class Demo
         $pdo = Database::pdo();
         $hash = password_hash('admin123', PASSWORD_BCRYPT, ['cost' => 10]);
         $defs = [
-            ['Master Campanha', 'master@pollicontas.synetiq.com.br', 'MASTER'],
-            ['Tesoureiro', 'financeiro@pollicontas.synetiq.com.br', 'FINANCEIRO'],
-            ['Coord. RH', 'rh@pollicontas.synetiq.com.br', 'RH'],
-            ['Consulta (somente leitura)', 'consulta@pollicontas.synetiq.com.br', 'CONSULTA'],
+            ['Master Campanha', 'master@contas.synetiq.com.br', 'MASTER'],
+            ['Tesoureiro', 'financeiro@contas.synetiq.com.br', 'FINANCEIRO'],
+            ['Coord. RH', 'rh@contas.synetiq.com.br', 'RH'],
+            ['Consulta (somente leitura)', 'consulta@contas.synetiq.com.br', 'CONSULTA'],
         ];
         $now = now_sql();
         foreach ($defs as [$name, $email, $role]) {
@@ -28,7 +28,7 @@ final class Demo
             }
         }
         $stmt = $pdo->prepare('SELECT * FROM `User` WHERE email = ? LIMIT 1');
-        $stmt->execute(['master@pollicontas.synetiq.com.br']);
+        $stmt->execute(['master@contas.synetiq.com.br']);
         return $stmt->fetch();
     }
 
@@ -65,7 +65,7 @@ final class Demo
             . "3 0 obj<</Type/Page/MediaBox[0 0 300 144]/Parent 2 0 R/Contents 4 0 R"
             . "/Resources<</Font<</F1 5 0 R>>>>>>endobj\n"
             . "4 0 obj<</Length 62>>stream\n"
-            . "BT /F1 12 Tf 18 100 Td (Contrato demo POLLICONTAS) Tj ET\n"
+            . "BT /F1 12 Tf 18 100 Td (Contrato demo CONTAS) Tj ET\n"
             . "endstream\nendobj\n"
             . "5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\n"
             . "trailer<</Size 6/Root 1 0 R>>\n%%EOF\n";
@@ -97,6 +97,11 @@ final class Demo
         $pdo->exec('DELETE FROM `Supplier`');
         $pdo->exec('DELETE FROM `AccountMapping`');
         $pdo->exec('DELETE FROM `BankAccount`');
+        try {
+            $pdo->exec('DELETE FROM `Representative`');
+        } catch (Throwable) {
+            // tabela Conta+JE pode ainda não existir
+        }
 
         $now = now_sql();
         if (!$campaign) {
@@ -108,7 +113,7 @@ final class Demo
                 $id, 2026, 'Virmondes Cruvinel', 'Virmondes Borges Cruvinel Filho', '44321',
                 'UNIÃO', '44', '47552932000100', 'Deputado Estadual', 'GO', 'CENTROOESTE',
                 'Virmondes Cruvinel', 'Em campanha — Prestação de contas 2026', 1,
-                1400000, 1200000, '10/03/1980', 'Masculino', 'Superior Completo',
+                1270629.01, 1200000, '10/03/1980', 'Masculino', 'Superior Completo',
                 'Advogado / Deputado Estadual', 'Brasileira Nata / GO-Goiânia',
                 'https://virmondes.com.br', $now, $now,
             ]);
@@ -262,30 +267,69 @@ final class Demo
             'UPDATE `Campaign` SET electionYear=?, candidateName=?, candidateFullName=?, candidateNumber=?, party=?, partyNumber=?, totalBudget=?, legalSpendLimit=?, situation=?, website=?, reelection=?, updatedAt=? WHERE id=?'
         )->execute([
             2026, 'Virmondes Cruvinel', 'Virmondes Borges Cruvinel Filho', '44321',
-            'UNIÃO', '44', 1200000, 1400000, 'Em campanha — Prestação de contas 2026',
+            'UNIÃO', '44', 1200000, 1270629.01, 'Em campanha — Prestação de contas 2026',
             'https://virmondes.com.br', 1, $now, $campaign['id'],
         ]);
 
-        // label, banco, código, agência, conta, saldo, sort, depositCpf, depositCnpj, accountType, active
+        // label, banco, código, agência, conta, saldo, sort, depositCpf, depositCnpj, accountType, active, resourceOrigin, openedAt
         $accountsDef = [
-            // depositCpf, depositCnpj — Conta Principal só CPF (sem doação PJ)
-            ['Conta Principal', 'Banco do Brasil', '001', '3456-7', '12345-6', 285400, 0, 1, 0, 'Corrente', 1],
-            ['Conta Fundo Partidário', 'Caixa Econômica Federal', '104', '1289', '98765-4', 180000, 1, 0, 1, 'Corrente', 1],
-            ['Conta Vaquinha', 'Itaú Unibanco', '341', '4521', '55432-1', 62450, 2, 1, 0, 'Corrente', 1],
-            ['Conta Operacional', 'Santander', '033', '2100', '77881-0', 41320, 3, 1, 1, 'Corrente', 1],
-            ['Conta Poupança (inativa)', 'Banco do Brasil', '001', '3456-7', '99999-0', 0, 9, 1, 0, 'Poupança', 0],
+            ['Conta Doações para Campanha', 'Banco do Brasil', '001', '3456-7', '12345-6', 285400, 0, 1, 0, 'Corrente', 1, 'DOACOES_CAMPANHA', '2026-07-01'],
+            ['Conta Fundo Partidário', 'Caixa Econômica Federal', '104', '1289', '98765-4', 180000, 1, 0, 1, 'Corrente', 1, 'FUNDO_PARTIDARIO', '2026-07-01'],
+            ['Conta FEFC', 'Itaú Unibanco', '341', '4521', '55432-1', 150000, 2, 0, 1, 'Corrente', 1, 'FEFC', '2026-07-05'],
+            ['Conta Operacional', 'Santander', '033', '2100', '77881-0', 41320, 3, 1, 0, 'Corrente', 1, 'DOACOES_CAMPANHA', '2026-07-15'],
         ];
         $accounts = [];
+        $hasOriginCols = false;
+        try {
+            $hasOriginCols = (bool) $pdo->query("SHOW COLUMNS FROM `BankAccount` LIKE 'resourceOrigin'")->fetch();
+        } catch (Throwable) {
+        }
         foreach ($accountsDef as $a) {
             $id = cuid();
-            $pdo->prepare(
-                'INSERT INTO `BankAccount` (id, campaignId, label, bankName, bankCode, agency, accountNumber, accountType, balance, depositCpf, depositCnpj, active, sortOrder, createdAt, updatedAt)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
-            )->execute([$id, $campaign['id'], $a[0], $a[1], $a[2], $a[3], $a[4], $a[9], $a[5], $a[7], $a[8], $a[10], $a[6], $now, $now]);
+            if ($hasOriginCols) {
+                $pdo->prepare(
+                    'INSERT INTO `BankAccount` (id, campaignId, label, bankName, bankCode, agency, accountNumber, accountType, resourceOrigin, openedAt, balance, depositCpf, depositCnpj, active, sortOrder, createdAt, updatedAt)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                )->execute([
+                    $id, $campaign['id'], $a[0], $a[1], $a[2], $a[3], $a[4], $a[9], $a[11], $a[12],
+                    $a[5], $a[7], $a[8], $a[10], $a[6], $now, $now,
+                ]);
+            } else {
+                $pdo->prepare(
+                    'INSERT INTO `BankAccount` (id, campaignId, label, bankName, bankCode, agency, accountNumber, accountType, balance, depositCpf, depositCnpj, active, sortOrder, createdAt, updatedAt)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                )->execute([$id, $campaign['id'], $a[0], $a[1], $a[2], $a[3], $a[4], $a[9], $a[5], $a[7], $a[8], $a[10], $a[6], $now, $now]);
+            }
             $accounts[] = ['id' => $id, 'label' => $a[0], 'active' => (int) $a[10]];
         }
         $activeAccountIds = array_column(array_filter($accounts, static fn ($a) => (int) $a['active'] === 1), 'id');
         Lancamento::seedDefaultMappings($campaign['id'], $activeAccountIds);
+
+        try {
+            $repExists = (bool) $pdo->query(
+                "SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Representative' LIMIT 1"
+            )->fetch();
+            if ($repExists) {
+                $pdo->prepare(
+                    'INSERT INTO `Representative` (id, campaignId, role, name, cpf, email, phone, oabUf, oabNumber, crcUf, crcNumber, roleOther, active, notes, createdAt, updatedAt)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?)'
+                )->execute([
+                    cuid(), $campaign['id'], 'ADVOGADO', 'Helena Marques Advocacia',
+                    format_cpf_cnpj(generate_valid_cpf(9101)), 'advogado@campanha2026.go', '(62) 99910-2026',
+                    'GO', '34567', null, null, null, 'Representação legal Conta+JE §7.3', $now, $now,
+                ]);
+                $pdo->prepare(
+                    'INSERT INTO `Representative` (id, campaignId, role, name, cpf, email, phone, oabUf, oabNumber, crcUf, crcNumber, roleOther, active, notes, createdAt, updatedAt)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?)'
+                )->execute([
+                    cuid(), $campaign['id'], 'CONTABILISTA', 'Carlos Eduardo Contabilidade',
+                    format_cpf_cnpj(generate_valid_cpf(9102)), 'contabil@campanha2026.go', '(62) 99920-2026',
+                    null, null, 'GO', '12345/O', null, 'CRC responsável pela prestação', $now, $now,
+                ]);
+            }
+        } catch (Throwable) {
+            // ignore
+        }
 
         // Datas do demonstrativo: hoje → 04/10/2026 (espalhadas por semana)
         $flowDates = [
@@ -295,9 +339,10 @@ final class Demo
         $revenues = [
             ['FUNDO_PARTIDARIO', 'Diretório Estadual UNIÃO-GO', 280000, '2026-08-08', 'Repasse fundo partidário — parcela 1', $accounts[1]['id'], null, null],
             ['FUNDO_PARTIDARIO', 'Diretório Estadual UNIÃO-GO', 120000, '2026-09-05', 'Repasse fundo partidário — parcela 2', $accounts[1]['id'], null, null],
-            ['VAQUINHA_ELEITORAL', 'Financiamento Coletivo Oficial', 48500, '2026-08-22', 'Arrecadação vaquinha — ciclo 1', $accounts[2]['id'], null, null],
-            ['VAQUINHA_ELEITORAL', 'Financiamento Coletivo Oficial', 31200, '2026-09-19', 'Arrecadação vaquinha — ciclo 2', $accounts[2]['id'], null, null],
-            ['VAQUINHA_ELEITORAL', 'Financiamento Coletivo Oficial', 27800, '2026-10-03', 'Arrecadação vaquinha — ciclo final', $accounts[2]['id'], null, null],
+            ['FEFC', 'Diretório Nacional UNIÃO', 95000, '2026-08-15', 'Repasse FEFC — parcela 1', $accounts[2]['id'], null, null],
+            ['FCC', 'Financiamento Coletivo Oficial', 48500, '2026-08-22', 'Arrecadação FCC — ciclo 1', $accounts[0]['id'], null, null],
+            ['FCC', 'Financiamento Coletivo Oficial', 31200, '2026-09-19', 'Arrecadação FCC — ciclo 2', $accounts[0]['id'], null, null],
+            ['FCC', 'Financiamento Coletivo Oficial', 27800, '2026-10-03', 'Arrecadação FCC — ciclo final', $accounts[0]['id'], null, null],
         ];
         $donorNames = [
             'Ana Paula Mendes', 'Carlos Eduardo Silva', 'Fernanda Rocha Lima', 'José Roberto Alves',
@@ -306,7 +351,7 @@ final class Demo
         ];
         foreach ($donorNames as $i => $name) {
             $revenues[] = [
-                'DOADOR_PF', $name, 1500 + $i * 850, $flowDates[$i % count($flowDates)], 'Doação pessoa física',
+                'RECURSOS_PF', $name, 1500 + $i * 850, $flowDates[$i % count($flowDates)], 'Doação pessoa física',
                 $accounts[0]['id'], generate_valid_cpf(1000 + $i), 'REC-2026-' . str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
             ];
         }
@@ -714,7 +759,32 @@ final class Demo
             'cabos' => $cid ? (int) $pdo->query("SELECT COUNT(*) AS c FROM `CaboEleitoral` WHERE campaignId = " . $pdo->quote($cid))->fetch()['c'] : 0,
             'receitas' => $cid ? (int) $pdo->query("SELECT COUNT(*) AS c FROM `Revenue` WHERE campaignId = " . $pdo->quote($cid))->fetch()['c'] : 0,
             'despesas' => $cid ? (int) $pdo->query("SELECT COUNT(*) AS c FROM `Expense` WHERE campaignId = " . $pdo->quote($cid))->fetch()['c'] : 0,
+            'categorias' => 0,
+            'equipes' => 0,
+            'representantes' => 0,
+            'inconsistencias' => 0,
+            'relatorios' => 0,
+            'entrega' => 0,
         ];
+        if ($cid) {
+            try {
+                $counts['representantes'] = (int) $pdo->query("SELECT COUNT(*) AS c FROM `Representative` WHERE campaignId = " . $pdo->quote($cid) . " AND active = 1")->fetch()['c'];
+            } catch (Throwable) {
+            }
+            try {
+                $counts['categorias'] = (int) $pdo->query("SELECT COUNT(*) AS c FROM `ExpenseCategory` WHERE active = 1")->fetch()['c'];
+            } catch (Throwable) {
+            }
+            try {
+                $counts['equipes'] = (int) $pdo->query("SELECT COUNT(*) AS c FROM `Team` WHERE active = 1")->fetch()['c'];
+            } catch (Throwable) {
+            }
+            $issues = ElectoralRules::checkInconsistencies($campaign);
+            $imped = count(array_filter($issues, static fn ($i) => ($i['level'] ?? '') === 'IMPEDITIVA'));
+            $counts['inconsistencias'] = $imped === 0 ? 1 : 0;
+            $counts['relatorios'] = ($counts['receitas'] > 0 || $counts['despesas'] > 0) ? 1 : 0;
+            $counts['entrega'] = ($counts['campanha'] && $counts['contas'] && $counts['inconsistencias']) ? 1 : 0;
+        }
         return $counts;
     }
 }

@@ -20,7 +20,7 @@ final class Mailer
             'From: ' . $fromHeader,
             'Reply-To: ' . $fromEmail,
             'MIME-Version: 1.0',
-            'X-Mailer: POLLICONTAS',
+            'X-Mailer: CONTAS',
         ];
 
         if ($htmlBody) {

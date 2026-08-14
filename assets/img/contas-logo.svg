@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="CONTAS">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A254A"/>
+      <stop offset="100%" stop-color="#12365F"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2DD4BF"/>
+      <stop offset="100%" stop-color="#0D9488"/>
+    </linearGradient>
+  </defs>
+  <rect x="24" y="24" width="464" height="464" rx="108" fill="url(#bg)"/>
+  <rect x="24" y="24" width="52" height="464" rx="26" fill="url(#accent)"/>
+  <!-- ledger card -->
+  <rect x="128" y="118" width="268" height="276" rx="28" fill="#FFFFFF"/>
+  <rect x="158" y="156" width="48" height="20" rx="6" fill="#0D9488"/>
+  <rect x="220" y="160" width="140" height="12" rx="6" fill="#D7E2EE"/>
+  <rect x="158" y="204" width="48" height="20" rx="6" fill="#2563EB"/>
+  <rect x="220" y="208" width="140" height="12" rx="6" fill="#D7E2EE"/>
+  <rect x="158" y="252" width="48" height="20" rx="6" fill="#D97706"/>
+  <rect x="220" y="256" width="140" height="12" rx="6" fill="#D7E2EE"/>
+  <rect x="158" y="300" width="48" height="20" rx="6" fill="#BE123C"/>
+  <rect x="220" y="304" width="108" height="12" rx="6" fill="#D7E2EE"/>
+  <!-- integrity seal -->
+  <circle cx="392" cy="372" r="58" fill="url(#accent)"/>
+  <path d="M366 372 l18 18 34-40" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
