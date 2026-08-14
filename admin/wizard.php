@@ -2,7 +2,7 @@
 require_once dirname(__DIR__) . '/bootstrap.php';
 $user = Auth::requireLogin('wizard');
 $activeModule = 'wizard';
-$pageTitle = 'Wizard de dados';
+$pageTitle = '1 · Cadastro do candidato';
 $campaign = Metrics::getCampaign();
 $pdo = Database::pdo();
 
@@ -153,14 +153,16 @@ if (request_method() === 'POST') {
 
 $status = Demo::wizardStatus();
 $steps = [
-    ['campanha', 'Qualificação do prestador (Conta+JE)', '/admin/wizard.php', true],
-    ['contas', 'Contas bancárias Doações / FP / FEFC', '/admin/contas.php', true],
-    ['representantes', 'Representantes legais (OAB/CRC)', '/admin/representantes.php', true],
-    ['vinculos', 'Vínculos de fontes × contas', '/admin/vinculos.php', true],
-    ['fornecedores', 'Fornecedores', '/admin/fornecedores.php', true],
-    ['veiculos', 'Veículos', '/admin/veiculos.php', false],
-    ['cabos', 'Militância / contratos', '/admin/cabos.php', false],
-    ['receitas', 'Doações e despesas', '/admin/lancamento.php', true],
+    ['campanha', '1 · Cadastro do candidato', '/admin/wizard.php', true],
+    ['contas', '2 · Cadastro das contas', '/admin/contas.php', true],
+    ['representantes', '3 · Representantes legais', '/admin/representantes.php', true],
+    ['categorias', '4 · Naturezas de despesa', '/admin/categorias.php', true],
+    ['vinculos', '5 · Vínculos de contas', '/admin/vinculos.php', true],
+    ['fornecedores', '6 · Fornecedores', '/admin/fornecedores.php', true],
+    ['equipes', '7 · Equipes', '/admin/equipes.php', false],
+    ['veiculos', '8 · Veículos', '/admin/veiculos.php', false],
+    ['cabos', '9 · Militância / contratos', '/admin/cabos.php', false],
+    ['receitas', 'Lançar doações e despesas', '/admin/lancamento.php', true],
     ['relatorios', 'Relatórios Conta+JE §11', '/admin/relatorios.php', true],
     ['inconsistencias', 'Verificar inconsistências', '/admin/inconsistencias.php', true],
     ['entrega', 'Pacote de entrega Conta+JE / TSE', '/admin/entrega.php', true],

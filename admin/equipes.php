@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/bootstrap.php';
 
 $user = Auth::requireLogin('equipes');
 $activeModule = 'equipes';
-$pageTitle = 'Equipes';
+$pageTitle = '7 · Equipes';
 $pdo = Database::pdo();
 $canWrite = can_launch($user['role']);
 $editId = trim((string) get('id', ''));

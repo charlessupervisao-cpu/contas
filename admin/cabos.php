@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/bootstrap.php';
 
 $user = Auth::requireLogin('cabos');
 $activeModule = 'cabos';
-$pageTitle = 'Cabos / Contratos';
+$pageTitle = '9 · Militância / contratos';
 $campaign = Metrics::getCampaign();
 $pdo = Database::pdo();
 $canWrite = can_launch($user['role']);

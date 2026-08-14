@@ -8,6 +8,9 @@ $flash = flash_get();
 $primaryMods = array_values(array_filter(MODULES, static fn ($m) => ($m['group'] ?? '') === 'primary'));
 $opsMods = array_values(array_filter(MODULES, static fn ($m) => ($m['group'] ?? '') === 'ops'));
 $configMods = array_values(array_filter(MODULES, static fn ($m) => ($m['group'] ?? '') === 'config'));
+usort($configMods, static function (array $a, array $b): int {
+    return ((int) ($a['setupOrder'] ?? 999)) <=> ((int) ($b['setupOrder'] ?? 999));
+});
 $showConfig = false;
 $configOpen = false;
 foreach ($configMods as $cm) {
@@ -78,6 +81,7 @@ foreach ($configMods as $cm) {
         <details class="nav-accordion" <?= $configOpen ? 'open' : '' ?>>
           <summary class="nav-accordion-summary">Configurações</summary>
           <div class="nav-accordion-body">
+            <div class="nav-config-hint">Cadastre nesta ordem (1 → 12)</div>
             <?php foreach ($configMods as $mod): ?>
               <?php if (!in_array($user['role'], $mod['roles'], true)) continue; ?>
               <a class="nav-config <?= ($mod['id'] ?? '') === 'manual' ? 'nav-manual' : '' ?> <?= $activeModule === $mod['id'] ? 'active' : '' ?>"

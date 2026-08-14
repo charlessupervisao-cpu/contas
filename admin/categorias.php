@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/bootstrap.php';
 
 $user = Auth::requireLogin('categorias');
 $activeModule = 'categorias';
-$pageTitle = 'Categorias de despesa';
+$pageTitle = '4 · Naturezas de despesa';
 $pdo = Database::pdo();
 $canWrite = can_launch($user['role']);
 $editId = trim((string) get('id', ''));

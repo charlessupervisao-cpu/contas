@@ -2,7 +2,7 @@
 require_once dirname(__DIR__) . '/bootstrap.php';
 $user = Auth::requireLogin('vinculos');
 $activeModule = 'vinculos';
-$pageTitle = 'Vínculos conta';
+$pageTitle = '5 · Vínculos de contas';
 $campaign = Metrics::getCampaign();
 $pdo = Database::pdo();
 $accounts = $campaign ? Lancamento::listAccountsOrdered($campaign['id']) : [];

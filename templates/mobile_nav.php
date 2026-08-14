@@ -29,6 +29,9 @@ $configMods = array_values(array_filter(
     MODULES,
     static fn ($m) => ($m['group'] ?? '') === 'config' && in_array($user['role'], $m['roles'], true)
 ));
+usort($configMods, static function (array $a, array $b): int {
+    return ((int) ($a['setupOrder'] ?? 999)) <=> ((int) ($b['setupOrder'] ?? 999));
+});
 $opsExtra = array_values(array_filter(
     MODULES,
     static fn ($m) => ($m['group'] ?? '') === 'ops'
@@ -77,7 +80,7 @@ $opsExtra = array_values(array_filter(
     <?php endif; ?>
     <?php if ($configMods): ?>
       <div class="mobile-config-section">
-        <div class="mobile-config-section-label">Sistema</div>
+        <div class="mobile-config-section-label">Cadastro na ordem (1 → 12)</div>
         <?php foreach ($configMods as $mod): ?>
           <a class="mobile-config-link<?= $activeModule === ($mod['id'] ?? '') ? ' is-active' : '' ?>"
              href="<?= e(url_path(ltrim($mod['href'], '/'))) ?>">

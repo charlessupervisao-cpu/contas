@@ -4,7 +4,7 @@ declare(strict_types=1);
 const APP_NAME = 'CONTAS';
 const APP_TAGLINE = 'Prestação de contas para políticos';
 /** Build publicada no deploy — use para confirmar se o cPanel está atualizado */
-const APP_BUILD = '2026.08.14-contamaisje-ui';
+const APP_BUILD = '2026.08.14-config-seq';
 const ELECTION_YEAR = 2026;
 /** Fim da janela do demonstrativo / 1º turno (GO 2026) */
 const CAMPAIGN_END_DATE = '2026-10-04';
@@ -214,13 +214,12 @@ const REVENUE_SOURCE_COLORS = [
 
 /**
  * Menu lateral alinhado ao Conta+JE (TSE):
- * primary → ops → config.
+ * primary (operação) → ops → config (sequência numerada de cadastro).
+ *
+ * Em Configurações, `setupOrder` define a ordem obrigatória de cadastramento.
  */
 const MODULES = [
     ['id' => 'dashboard', 'label' => 'Painel da prestação', 'href' => '/admin/index.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'primary', 'shortcut' => 'I'],
-    ['id' => 'wizard', 'label' => 'Qualificação do prestador', 'href' => '/admin/wizard.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary'],
-    ['id' => 'representantes', 'label' => 'Representantes legais', 'href' => '/admin/representantes.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'primary'],
-    ['id' => 'contas', 'label' => 'Contas bancárias de campanha', 'href' => '/admin/contas.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary'],
     ['id' => 'lancamento', 'label' => 'Lançar receita / despesa', 'href' => '/admin/lancamento.php', 'roles' => ['MASTER'], 'group' => 'primary', 'shortcut' => 'L'],
     ['id' => 'receitas', 'label' => 'Doações recebidas', 'href' => '/admin/receitas.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary', 'shortcut' => 'R', 'fkey' => 'F2'],
     ['id' => 'despesas', 'label' => 'Despesas efetuadas', 'href' => '/admin/despesas.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary', 'shortcut' => 'D', 'fkey' => 'F3'],
@@ -231,16 +230,21 @@ const MODULES = [
     ['id' => 'entrega', 'label' => 'Entrega ao Conta+JE / TSE', 'href' => '/admin/entrega.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'primary'],
     ['id' => 'base-legal', 'label' => 'Base legal TRE-GO 2026', 'href' => '/admin/base-legal.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'primary'],
     ['id' => 'conciliacao', 'label' => 'Conciliação bancária', 'href' => '/admin/conciliacao.php', 'roles' => ['MASTER', 'FINANCEIRO'], 'group' => 'ops'],
-    ['id' => 'fornecedores', 'label' => 'Fornecedores', 'href' => '/admin/fornecedores.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'ops'],
-    ['id' => 'manual', 'label' => 'MANUAL DE USO', 'href' => '/admin/manual.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'config'],
-    ['id' => 'categorias', 'label' => 'Naturezas de despesa', 'href' => '/admin/categorias.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'config'],
-    ['id' => 'equipes', 'label' => 'Equipes', 'href' => '/admin/equipes.php', 'roles' => ['MASTER', 'RH', 'CONSULTA'], 'group' => 'config'],
-    ['id' => 'veiculos', 'label' => 'Veículos', 'href' => '/admin/veiculos.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'config'],
-    ['id' => 'cabos', 'label' => 'Militância / contratos', 'href' => '/admin/cabos.php', 'roles' => ['MASTER', 'RH', 'CONSULTA'], 'group' => 'config'],
-    ['id' => 'vinculos', 'label' => 'Vínculos de contas', 'href' => '/admin/vinculos.php', 'roles' => ['MASTER', 'FINANCEIRO'], 'group' => 'config'],
-    ['id' => 'saldos', 'label' => 'Ajuste de saldos', 'href' => '/admin/saldos.php', 'roles' => ['MASTER', 'FINANCEIRO'], 'group' => 'config'],
-    ['id' => 'usuarios', 'label' => 'Administrar acessos', 'href' => '/admin/usuarios.php', 'roles' => ['MASTER'], 'group' => 'config'],
-    ['id' => 'diario', 'label' => 'Diário do dia', 'href' => '/admin/diario.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'config'],
+
+    // Configurações — sequência de cadastramento (obrigatória para o sistema funcionar)
+    ['id' => 'wizard', 'label' => '1 · Cadastro do candidato', 'href' => '/admin/wizard.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'config', 'setupOrder' => 1],
+    ['id' => 'contas', 'label' => '2 · Cadastro das contas', 'href' => '/admin/contas.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'config', 'setupOrder' => 2],
+    ['id' => 'representantes', 'label' => '3 · Representantes legais', 'href' => '/admin/representantes.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'config', 'setupOrder' => 3],
+    ['id' => 'categorias', 'label' => '4 · Naturezas de despesa', 'href' => '/admin/categorias.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'config', 'setupOrder' => 4],
+    ['id' => 'vinculos', 'label' => '5 · Vínculos de contas', 'href' => '/admin/vinculos.php', 'roles' => ['MASTER', 'FINANCEIRO'], 'group' => 'config', 'setupOrder' => 5],
+    ['id' => 'fornecedores', 'label' => '6 · Fornecedores', 'href' => '/admin/fornecedores.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'config', 'setupOrder' => 6],
+    ['id' => 'equipes', 'label' => '7 · Equipes', 'href' => '/admin/equipes.php', 'roles' => ['MASTER', 'RH', 'CONSULTA'], 'group' => 'config', 'setupOrder' => 7],
+    ['id' => 'veiculos', 'label' => '8 · Veículos', 'href' => '/admin/veiculos.php', 'roles' => ['MASTER', 'FINANCEIRO', 'CONSULTA'], 'group' => 'config', 'setupOrder' => 8],
+    ['id' => 'cabos', 'label' => '9 · Militância / contratos', 'href' => '/admin/cabos.php', 'roles' => ['MASTER', 'RH', 'CONSULTA'], 'group' => 'config', 'setupOrder' => 9],
+    ['id' => 'saldos', 'label' => '10 · Ajuste de saldos', 'href' => '/admin/saldos.php', 'roles' => ['MASTER', 'FINANCEIRO'], 'group' => 'config', 'setupOrder' => 10],
+    ['id' => 'usuarios', 'label' => '11 · Administrar acessos', 'href' => '/admin/usuarios.php', 'roles' => ['MASTER'], 'group' => 'config', 'setupOrder' => 11],
+    ['id' => 'diario', 'label' => '12 · Diário do dia', 'href' => '/admin/diario.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'config', 'setupOrder' => 12],
+    ['id' => 'manual', 'label' => 'Manual de uso', 'href' => '/admin/manual.php', 'roles' => ['MASTER', 'FINANCEIRO', 'RH', 'CONSULTA'], 'group' => 'config', 'setupOrder' => 99],
 ];
 
 const VIEW_ROLES = [

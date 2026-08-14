@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/bootstrap.php';
 
 $user = Auth::requireLogin('contas');
 $activeModule = 'contas';
-$pageTitle = 'Contas Bancárias';
+$pageTitle = '2 · Cadastro das contas';
 $campaign = Metrics::getCampaign();
 $pdo = Database::pdo();
 $canWrite = can_launch($user['role']);
