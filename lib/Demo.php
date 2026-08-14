@@ -759,17 +759,31 @@ final class Demo
             'cabos' => $cid ? (int) $pdo->query("SELECT COUNT(*) AS c FROM `CaboEleitoral` WHERE campaignId = " . $pdo->quote($cid))->fetch()['c'] : 0,
             'receitas' => $cid ? (int) $pdo->query("SELECT COUNT(*) AS c FROM `Revenue` WHERE campaignId = " . $pdo->quote($cid))->fetch()['c'] : 0,
             'despesas' => $cid ? (int) $pdo->query("SELECT COUNT(*) AS c FROM `Expense` WHERE campaignId = " . $pdo->quote($cid))->fetch()['c'] : 0,
+            'categorias' => 0,
+            'equipes' => 0,
             'representantes' => 0,
             'inconsistencias' => 0,
+            'relatorios' => 0,
+            'entrega' => 0,
         ];
         if ($cid) {
             try {
                 $counts['representantes'] = (int) $pdo->query("SELECT COUNT(*) AS c FROM `Representative` WHERE campaignId = " . $pdo->quote($cid) . " AND active = 1")->fetch()['c'];
             } catch (Throwable) {
             }
+            try {
+                $counts['categorias'] = (int) $pdo->query("SELECT COUNT(*) AS c FROM `ExpenseCategory` WHERE active = 1")->fetch()['c'];
+            } catch (Throwable) {
+            }
+            try {
+                $counts['equipes'] = (int) $pdo->query("SELECT COUNT(*) AS c FROM `Team` WHERE active = 1")->fetch()['c'];
+            } catch (Throwable) {
+            }
             $issues = ElectoralRules::checkInconsistencies($campaign);
             $imped = count(array_filter($issues, static fn ($i) => ($i['level'] ?? '') === 'IMPEDITIVA'));
             $counts['inconsistencias'] = $imped === 0 ? 1 : 0;
+            $counts['relatorios'] = ($counts['receitas'] > 0 || $counts['despesas'] > 0) ? 1 : 0;
+            $counts['entrega'] = ($counts['campanha'] && $counts['contas'] && $counts['inconsistencias']) ? 1 : 0;
         }
         return $counts;
     }
